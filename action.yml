@@ -1,0 +1,36 @@
+name: venafi-codesigning-wrapper-action
+author: avwsolutions
+description: 'Venafi CodeSigning Protectwrapper that simplifies using Linux based signers with Github Actions'
+branding:
+  icon: 'package'
+  color: 'blue'
+inputs:
+  version:
+    description: 'Version of CSP driver to install'
+    required: false
+    default: '22.3'
+  signing-app:
+    description: 'Signing Application to use'
+    required: false
+    default: 'jarsigner'
+  csp-auth-url:
+    description: 'The CSP's authorization URL'
+    required: false
+    default: 'https://my-tpp/vedauth'
+  csp-hsm-url:
+    description: 'The TPP's Hardware Security Module (HSM) backend URL'
+    required: false
+    default: 'https://my-tpp/vedhsm'
+  csp-username:
+    description: 'A login username for the CSP'
+    required: false
+    default: 'signer'
+  csp-password:
+    description: 'The password associated with the login username'
+    required: false
+outputs:
+  csp-driver-config:
+    description: 'Configuration of the installed CSP driver'
+runs:
+  using: 'node12'
+  main: 'dist/index.js'
