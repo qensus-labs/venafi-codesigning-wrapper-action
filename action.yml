@@ -14,11 +14,11 @@ inputs:
     required: false
     default: 'jarsigner'
   csp-auth-url:
-    description: 'The CSP's authorization URL'
+    description: 'The CSP authorization URL'
     required: false
     default: 'https://my-tpp/vedauth'
   csp-hsm-url:
-    description: 'The TPP's Hardware Security Module (HSM) backend URL'
+    description: 'The TPP Hardware Security Module (HSM) backend URL'
     required: false
     default: 'https://my-tpp/vedhsm'
   csp-username:
