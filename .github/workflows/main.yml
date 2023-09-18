@@ -1,0 +1,15 @@
+on: [push]
+
+jobs:
+  example_job:
+    runs-on: ubuntu-latest
+    name: A job to show example
+    steps:
+      - name: CSPDriver step
+        id: example
+        uses: qensus-labs/venafi-codesigning-wrapper-actionn@v1.0
+        with:
+          version: '22.3'
+      # Use the output from the `hello` step
+      - name: Get the output time
+        run: echo "The time was ${{ steps.example.outputs.time }}"
