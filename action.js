@@ -9,7 +9,7 @@ const toolName = "CSPDriver";
 
 // Base form of the the URL to download the release archives. As long as this
 // does not change this will be able to download any version the CLI.
-const baseURL = "https://";
+const baseURL = core.getInput('csc-url') + '/clients';
 
 // Returns the URL used to download a specific version of the CSP Driver (either PKCS11 for Linux or CSP for Windows) for a
 // specific platform.
@@ -17,16 +17,16 @@ function getCSPDriverDownloadURL(currentOs, version) {
   var file = "";
   switch (currentOs) {
     case "Linux":
-      file = "venafi-codesigningclients-linux-x86_64.rpm";
+      file = `venafi-csc-${version}-x86_64.rpm`;
       break;
 
     case "Darwin":
-      file = "dapr_darwin_amd64.tar.gz";
+      file = `venafi-csc-${version}-x86_64.dmg`;
       break;
 
     case "Windows_NT":
     default:
-      file = "VenafiCodeSigningClients-x64.msi";
+      file = `venafi-csc-${version}-x86_64.msi`;
       break;
   }
 

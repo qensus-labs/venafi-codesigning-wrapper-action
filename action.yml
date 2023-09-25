@@ -5,10 +5,13 @@ branding:
   icon: 'package'
   color: 'blue'
 inputs:
+  csc-url:
+    description: 'CodeSign Protect Client Downloads page'
+    default: 'https://localhost/csc/'
   version:
     description: 'Version of CSP driver to install'
     required: false
-    default: '22.3'
+    default: 'latest'
   signing-app:
     description: 'Signing Application to use'
     required: false
@@ -16,11 +19,11 @@ inputs:
   csp-auth-url:
     description: 'The CSP authorization URL'
     required: false
-    default: 'https://my-tpp/vedauth'
+    default: 'https://localhost/vedauth'
   csp-hsm-url:
     description: 'The TPP Hardware Security Module (HSM) backend URL'
     required: false
-    default: 'https://my-tpp/vedhsm'
+    default: 'https://localhost/vedhsm'
   csp-username:
     description: 'A login username for the CSP'
     required: false
