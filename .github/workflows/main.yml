@@ -9,7 +9,7 @@ jobs:
         id: example
         uses: qensus-labs/venafi-codesigning-wrapper-action@v1.0
         with:
-          version: '22.3'
+          csc-url: 'https://uvo1gm6lvzt1xsk5n8l.env.cloudshare.com/csc/'
       # Use the output from the `hello` step
       - name: Get the output time
         run: echo "The time was ${{ steps.example.outputs.time }}"
