@@ -135,6 +135,7 @@ function getExecutableExtension(currentOs) {
 
 // Returns a list of path to the fileToFind in the dir provided.
 function walkSync(dir, fileList, fileToFind) {
+  core.info(`${dir} en ${fileToFind} en ${fileList}`);
   var files = fs.readdirSync(dir);
 
   fileList = fileList || [];
