@@ -53,7 +53,7 @@ async function downloadCSPDriver(currentOs, version) {
     }
 
     // Cache the downloaded tool so we do not have to download multiple times
-    cachedToolPath = await tc.cacheDir(downloadPath, toolName, version);
+    cachedToolPath = await tc.cacheFile(downloadPath, toolName, version);
   }
 
   // Get the full path to the executable
