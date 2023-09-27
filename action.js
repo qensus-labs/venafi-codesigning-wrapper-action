@@ -34,7 +34,7 @@ function getCSPDriverDownloadURL(currentOs, version) {
   return util.format("%s%s/%s", baseURL, version, file);
 }
 
-// Downloads and extracts the archive to the runner and returns the path.
+// Downloads and installs the package to the runner and returns the path.
 async function downloadCSPDriver(currentOs, version) {
   // See if we have cached this tool already
   let cachedToolPath = tc.find(toolName, version);
@@ -52,29 +52,15 @@ async function downloadCSPDriver(currentOs, version) {
       );
     }
 
-    // (chmod a+rwx) sets permissions so that, User / owner can read, can
-    // write and can execute. Group can read, can write and can execute.
-    // Others can read, can write and can execute.
-    fs.chmodSync(downloadPath, "777");
-
-    // Stores the path where the archive was extracted
-    let installedToolPath;
-    if (currentOs === "Windows_NT") {
-      installedToolPath = await tc.extractZip(downloadPath);
-    } else {
-      // Both Linux and macOS use a .tar.gz file
-      installedToolPath = await tc.extractTar(downloadPath);
-    }
-
-    // Cache to tool so we do not have to download multiple times
-    cachedToolPath = await tc.cacheDir(installedToolPath, toolName, version);
+    // Cache the downloaded tool so we do not have to download multiple times
+    cachedToolPath = await tc.cacheDir(downloadPath, toolName, version);
   }
 
   // Get the full path to the executable
   const toolPath = findTool(currentOs, cachedToolPath);
   if (!toolPath) {
     throw new Error(
-      util.format("CSP Driver executable not found in path", cachedToolPath)
+      util.format("CSP Driver package not found in path", cachedToolPath)
     );
   }
 
