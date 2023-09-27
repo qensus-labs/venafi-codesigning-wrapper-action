@@ -48,8 +48,8 @@ async function downloadCSPDriver(currentOs, version) {
   // If we did not find the tool in the cache download it now.
   if (!cachedToolPath) {
     let downloadPath;
-    let downloadUrl = getCSPDriverDownloadURL(file);
     let downloadFileName = getCSPDriverFileName(currentOs, version);
+    let downloadUrl = getCSPDriverDownloadURL(downloadFileName);
     try {
       core.info(`Downloading CSP Driver from ${downloadUrl}...`);
       downloadPath = await tc.downloadTool(downloadUrl);
