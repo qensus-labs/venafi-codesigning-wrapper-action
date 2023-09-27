@@ -31,7 +31,7 @@ function getCSPDriverDownloadURL(currentOs, version) {
       break;
   }
 
-  return util.format("%s%s/%s", baseURL, version, file);
+  return util.format("%s/%s", baseURL, file);
 }
 
 // Downloads and installs the package to the runner and returns the path.
