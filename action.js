@@ -101,6 +101,7 @@ function findTool(currentOs, rootFolder) {
     );
   } else {
     // Return the first one we find.
+    util.format("Following found ", fileList)
     return fileList[0];
   }
 }
@@ -108,7 +109,22 @@ function findTool(currentOs, rootFolder) {
 // Returns the full name of the executable with extension if any. On Linux and
 // macOS the executable does not have an extension but on Windows it does.
 function getExecutableExtension(currentOs) {
-  return currentOs.match(/^Win/) ? ".msi" : "";
+  switch (currentOs) {
+    case "Linux":
+      fileExtension = ".rpm";
+      break;
+
+    case "Darwin":
+      fileExtension = ".dmg";
+      break;
+
+    case "Windows_NT":
+    default:
+      fileExtension = ".msi";
+      break;
+  }
+
+  return fileExtension;
 }
 
 // Returns a list of path to the fileToFind in the dir provided.
