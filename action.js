@@ -3,6 +3,7 @@ const util = require("util");
 const path = require("path");
 const core = require("@actions/core");
 const tc = require("@actions/tool-cache");
+const exec = require("@actions/exec");
 
 // The name of the tool we are installing with this action.
 const toolName = "CSPDriver";
