@@ -63,7 +63,7 @@ async function downloadCSPDriver(currentOs, version) {
   }
 
   // Get the full path to the executable
-  const toolPath = findTool(currentOs, cachedToolPath);
+  const toolPath = findTool(currentOs, cachedToolPath, downloadFileName);
   if (!toolPath) {
     throw new Error(
       util.format("CSP Driver package not found in path", cachedToolPath)
@@ -81,7 +81,7 @@ async function downloadCSPDriver(currentOs, version) {
 }
 
 // Returns a install path of the desired tool
-function findTool(currentOs, rootFolder) {
+function findTool(currentOs, rootFolder, fileName) {
   fs.chmodSync(rootFolder, "777");
 
   // Holds all the paths. The tool might be installed in multiple locations.
@@ -92,7 +92,7 @@ function findTool(currentOs, rootFolder) {
   fileList = walkSync(
     rootFolder,
     fileList,
-    toolName + getExecutableExtension(currentOs)
+    fileName
   );
 
   if (!fileList || fileList.length == 0) {
