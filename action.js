@@ -36,7 +36,6 @@ function getCSPDriverFileName(currentOs, version) {
 }
 
 function getCSPDriverDownloadURL(file) {
-  file = getCSPDriverFileName(currentOs, version)
   return util.format("%s/%s", baseURL, file);
 }
 
