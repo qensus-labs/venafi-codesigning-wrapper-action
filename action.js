@@ -14,7 +14,8 @@ const baseURL = core.getInput('csc-url') + '/clients';
 
 // Returns the URL used to download a specific version of the CSP Driver (either PKCS11 for Linux or CSP for Windows) for a
 // specific platform.
-function getCSPDriverDownloadURL(currentOs, version) {
+
+function getCSPDriverFileName(currentOs, version) {
   var file = "";
   switch (currentOs) {
     case "Linux":
@@ -31,6 +32,11 @@ function getCSPDriverDownloadURL(currentOs, version) {
       break;
   }
 
+  return file;
+}
+
+function getCSPDriverDownloadURL(file) {
+  file = getCSPDriverFileName(currentOs, version)
   return util.format("%s/%s", baseURL, file);
 }
 
@@ -42,7 +48,8 @@ async function downloadCSPDriver(currentOs, version) {
   // If we did not find the tool in the cache download it now.
   if (!cachedToolPath) {
     let downloadPath;
-    let downloadUrl = getCSPDriverDownloadURL(currentOs, version);
+    let downloadUrl = getCSPDriverDownloadURL(file);
+    let downloadFileName = getCSPDriverFileName(currentOs, version);
     try {
       core.info(`Downloading CSP Driver from ${downloadUrl}...`);
       downloadPath = await tc.downloadTool(downloadUrl);
@@ -53,7 +60,7 @@ async function downloadCSPDriver(currentOs, version) {
     }
 
     // Cache the downloaded tool so we do not have to download multiple times
-    cachedToolPath = await tc.cacheFile(downloadPath,file, toolName, version);
+    cachedToolPath = await tc.cacheFile(downloadPath, downloadFileName , toolName, version);
   }
 
   // Get the full path to the executable
