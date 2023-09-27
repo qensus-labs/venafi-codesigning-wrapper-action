@@ -107,7 +107,7 @@ function findTool(currentOs, rootFolder) {
     );
   } else {
     // Return the first one we find.
-    util.format("Following found ", fileList)
+    core.info(`Following found ${fileList}`);
     return fileList[0];
   }
 }
