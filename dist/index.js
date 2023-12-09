@@ -52,6 +52,7 @@ function getCSPDriverFileName(currentOs, version) {
           file = `venafi-csc-${version}-x86_64.rpm`;
           break;
       }
+      break;
 
     case "Darwin":
       file = `venafi-csc-${version}-x86_64.dmg`;
