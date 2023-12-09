@@ -29,7 +29,9 @@ function getLinuxDistroID() {
     lines.forEach((line) => {
       // Split the line into an array of words delimited by '='
       const words = line.split('=')
-      distroRelease[words[0].trim().toLowerCase()] = words[1].trim()
+      console.log(`=${words}=`);
+      console.log(`${words[0].trim()}`);
+      //distroRelease[words[0].trim().toLowerCase()] = words[1].trim()
     });
     console.log(`Distribution: ${distroRelease.id} detected.`);
     return distroRelease.id
