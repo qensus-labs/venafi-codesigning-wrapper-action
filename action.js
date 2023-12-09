@@ -39,7 +39,7 @@ function getCSPDriverFileName(currentOs, version) {
     case "Linux":
       distro = getLinuxDistroID();
       switch (distro) {
-        case "ubuntu", "debian":
+        case "ubuntu":
           file = `venafi-csc-${version}-x86_64.deb`;
           break;
         case "rhel", "centos", "fedora", "rocky", "ol", "amzn":
