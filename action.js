@@ -12,13 +12,31 @@ const toolName = "CSPDriver";
 // does not change this will be able to download any version the CLI.
 const baseURL = core.getInput('csc-url') + '/clients';
 
+// Returns the distro name of the linux operating system.
+// Supported distro names are 'rhel','centos', 'rocky', 'ubuntu', 'amzn', 'fedora', 'debian' and 'ol'.
+function getLinuxDistroID {
+  fs.readFile '/etc/os-release', 'utf8', (err, data) => {
+    if (err) throw err
+    const lines = data.split('\n')
+    const distroRelease = {}
+    lines.forEach((line, index) => {
+      // Split the line into an array of words delimited by '='
+      const words = line.split('=')
+      distroRelease[words[0].trim().toLowerCase()] = words[1].trim()
+    })
+    console.log(`Distribution: ${distroRelease.id} detected.`);
+    return distroRelease.id
+
+
 // Returns the URL used to download a specific version of the CSP Driver (either PKCS11 for Linux or CSP for Windows) for a
 // specific platform.
 
 function getCSPDriverFileName(currentOs, version) {
   var file = "";
+  var distro = "";
   switch (currentOs) {
     case "Linux":
+      distro = getLinuxDistroID();
       file = `venafi-csc-${version}-x86_64.rpm`;
       break;
 
