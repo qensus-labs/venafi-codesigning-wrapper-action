@@ -14,8 +14,8 @@ const baseURL = core.getInput('csc-url') + '/clients';
 
 // Returns the distro name of the linux operating system.
 // Supported distro names are 'rhel','centos', 'rocky', 'ubuntu', 'amzn', 'fedora', 'debian' and 'ol'.
-function getLinuxDistroID {
-  fs.readFile '/etc/os-release', 'utf8', (err, data) => {
+function getLinuxDistroID() {
+  fs.readFile('/etc/os-release', 'utf8', (err, data) => {
     if (err) throw err
     const lines = data.split('\n')
     const distroRelease = {}
@@ -23,10 +23,11 @@ function getLinuxDistroID {
       // Split the line into an array of words delimited by '='
       const words = line.split('=')
       distroRelease[words[0].trim().toLowerCase()] = words[1].trim()
-    })
+    });
     console.log(`Distribution: ${distroRelease.id} detected.`);
     return distroRelease.id
-
+  });
+}
 
 // Returns the URL used to download a specific version of the CSP Driver (either PKCS11 for Linux or CSP for Windows) for a
 // specific platform.
