@@ -26,7 +26,7 @@ function getLinuxDistroID() {
       console.log(`=${words}=`);
       console.log(`${words[0].trim().toLowerCase()}`);
       //distroRelease[words[0].trim().toLo{werCase()] = words[1].trim()
-      distroRelease[words[0].trim().toLowerCase()] = words[1].trim()
+      distroRelease[words[0].trim().toLowerCase()] = words[1]
     });
     console.log(`Distribution: ${distroRelease.id} detected.`);
     return distroRelease.id
