@@ -19,7 +19,8 @@ function getLinuxDistroID() {
     if (err) throw err
     const lines = data.split('\n')
     const distroRelease = {}
-    lines.forEach((line, index) => {
+    console.log(`== ${lines}`)
+    lines.forEach((line) => {
       // Split the line into an array of words delimited by '='
       const words = line.split('=')
       distroRelease[words[0].trim().toLowerCase()] = words[1].trim()
