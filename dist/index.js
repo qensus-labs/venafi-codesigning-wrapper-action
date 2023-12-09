@@ -29,9 +29,6 @@ function getLinuxDistroID() {
     lines.forEach((line) => {
       // Split the line into an array of words delimited by '='
       const words = line.split('=')
-      console.log(`=${words}=`);
-      console.log(`${words[0].trim().toLowerCase()}`);
-      //distroRelease[words[0].trim().toLo{werCase()] = words[1].trim()
       distroRelease[words[0].trim().toLowerCase()] = words[1]
     });
     console.log(`Distribution: ${distroRelease.id} detected.`);
@@ -48,8 +45,14 @@ function getCSPDriverFileName(currentOs, version) {
   switch (currentOs) {
     case "Linux":
       distro = getLinuxDistroID();
-      file = `venafi-csc-${version}-x86_64.rpm`;
-      break;
+      switch (distro) {
+        case "ubuntu", "debian":
+          file = `venafi-csc-${version}-x86_64.deb`;
+          break;
+        case "rhel", "centos", "fedora", "rocky", "ol", "amzn":
+          file = `venafi-csc-${version}-x86_64.rpm`;
+          break;
+      }
 
     case "Darwin":
       file = `venafi-csc-${version}-x86_64.dmg`;
