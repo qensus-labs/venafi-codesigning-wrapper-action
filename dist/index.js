@@ -18,6 +18,27 @@ const toolName = "CSPDriver";
 // does not change this will be able to download any version the CLI.
 const baseURL = core.getInput('csc-url') + '/clients';
 
+async function installCSPDriverPackage(currentOs) {
+  var result =  "";
+  switch (currentOs) {
+    case "Linux":
+      result = await exec.exec('apt');
+      console.log(result)
+      break;
+
+    case "Darwin":
+      result = await exec.exec('apt');
+      break;
+
+    case "Windows_NT":
+    default:
+      result = await exec.exec('dir');
+      break;
+  }
+
+  return result;
+}
+
 // Returns the distro name of the linux operating system.
 // Supported distro names are 'rhel','centos', 'rocky', 'ubuntu', 'amzn', 'fedora', 'debian' and 'ol'.
 function getLinuxDistroID() {
@@ -203,7 +224,11 @@ async function run(currentOs, version) {
   if (!process.env["PATH"].startsWith(path.dirname(cachedPath))) {
     core.addPath(path.dirname(cachedPath));
   }
+  let results = await installCSPDriverPackage(currentOs);
 
+  console.log(
+    `CSP Driver version: '${version}' has been installed ${results}`
+  );
   console.log(
     `CSP Driver version: '${version}' has been cached at ${cachedPath}`
   );
