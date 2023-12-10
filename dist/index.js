@@ -49,7 +49,7 @@ function getLinuxDistroID() {
 
 function getCSPDriverFileName(currentOs, version) {
   var file = "";
-  const linuxOS = new Object();
+  let linuxOS = new Object();
   switch (currentOs) {
     case "Linux":
       linuxOS = getLinuxDistroID();
