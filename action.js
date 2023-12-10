@@ -19,19 +19,19 @@ function getLinuxDistroID() {
     if (err) throw err
     const lines = data.split('\n')
     const distroRelease = {}
-    const linuxOS = {}
+    let linuxOS = new Object();
     lines.forEach((line) => {
       // Split the line into an array of words delimited by '='
       const words = line.split('=')
       distroRelease[words[0].trim().toLowerCase()] = words[1]
     });
-    linuxOS[distro] = distroRelease.id
-    switch (linuxOS[distro]) {
+    linuxOS.distro = distroRelease.id
+    switch (linuxOS.distro) {
       case "ubuntu", "debian":
-        linuxOS[package] = `deb`;
+        linuxOS.package = `deb`;
         break;
       case "rhel", "centos", "fedora", "rocky", "ol", "amzn":
-        linuxOS[package] = `rpm`;
+        linuxOS.package = `rpm`;
         break;
     }
     return linuxOS
