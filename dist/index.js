@@ -54,7 +54,7 @@ function getCSPDriverFileName(currentOs, version) {
   switch (currentOs) {
     case "Linux":
       linuxOS = getLinuxDistroID();
-      file = `venafi-csc-${version}-x86_64.${linuxOS.package}`;
+      //file = `venafi-csc-${version}-x86_64.${linuxOS.package}`;
       break;
 
     case "Darwin":
