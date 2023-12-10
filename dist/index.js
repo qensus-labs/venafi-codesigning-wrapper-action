@@ -20,36 +20,39 @@ const baseURL = core.getInput('csc-url') + '/clients';
 
 // Returns the distro name of the linux operating system.
 // Supported distro names are 'rhel','centos', 'rocky', 'ubuntu', 'amzn', 'fedora', 'debian' and 'ol'.
-function getLinuxDistroID() {
+async function getLinuxDistroID() {
   const linuxOS = new Object();
-  fs.readFile('/etc/os-release', 'utf8', (err, data) => {
-    if (err) throw err
-    const lines = data.split('\n')
-    const distroRelease = {}
+  const distroRelease = new Object();
+  try {
+    const data = await fs.promises.readFile('/etc/os-release', 'utf8');
+    const lines = data.toString().split('\n');
     lines.forEach((line) => {
       // Split the line into an array of words delimited by '='
       const words = line.split('=')
       distroRelease[words[0].trim().toLowerCase()] = words[1]
     });
-    linuxOS.distro = distroRelease.id
-    switch (linuxOS.distro) {
-      case "debian":
-      case "ubuntu":
-        linuxOS.packmgr = `deb`;
-        break;
-      case "amzn":
-      case "centos":
-      case "fedora":
-      case "rocky":
-      case "ol":
-      case "rhel":
-        linuxOS.packmgr = `rpm`;
-        break;
-      default:
-        linuxOS.packmgr = `zip`;
-    }
-    linuxOS = linuxOS;
-  });
+  } catch (exception) {
+    throw new Error(
+      util.format("Failed to read Linux distribution info from '/etc/os-release'")
+    );
+  }
+  linuxOS.distro = distroRelease.id
+  switch (linuxOS.distro) {
+    case "debian":
+    case "ubuntu":
+      linuxOS.packmgr = `deb`;
+      break;
+    case "amzn":
+    case "centos":
+    case "fedora":
+    case "rocky":
+    case "ol":
+    case "rhel":
+      linuxOS.packmgr = `rpm`;
+      break;
+    default:
+      linuxOS.packmgr = `zip`;
+  }
   return linuxOS
 }
 
