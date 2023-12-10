@@ -18,11 +18,11 @@ const toolName = "CSPDriver";
 // does not change this will be able to download any version the CLI.
 const baseURL = core.getInput('csc-url') + '/clients';
 
-async function installCSPDriverPackage(currentOs) {
+async function installCSPDriverPackage(currentOs, cachedPath) {
   var result =  "";
   switch (currentOs) {
     case "Linux":
-      result = await exec.exec('apt');
+      result = await exec.exec('apt', ['install', cachedPath] );
       console.log(result)
       break;
 
@@ -224,7 +224,7 @@ async function run(currentOs, version) {
   if (!process.env["PATH"].startsWith(path.dirname(cachedPath))) {
     core.addPath(path.dirname(cachedPath));
   }
-  let results = await installCSPDriverPackage(currentOs);
+  let results = await installCSPDriverPackage(currentOs, cachedPath);
 
   console.log(
     `CSP Driver version: '${version}' has been installed ${results}`
