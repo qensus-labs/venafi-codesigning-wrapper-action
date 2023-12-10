@@ -21,11 +21,11 @@ const baseURL = core.getInput('csc-url') + '/clients';
 // Returns the distro name of the linux operating system.
 // Supported distro names are 'rhel','centos', 'rocky', 'ubuntu', 'amzn', 'fedora', 'debian' and 'ol'.
 function getLinuxDistroID() {
+  const linuxOS = new Object();
   fs.readFile('/etc/os-release', 'utf8', (err, data) => {
     if (err) throw err
     const lines = data.split('\n')
     const distroRelease = {}
-    const linuxOS = new Object();
     lines.forEach((line) => {
       // Split the line into an array of words delimited by '='
       const words = line.split('=')
