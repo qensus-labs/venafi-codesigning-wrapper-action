@@ -42,8 +42,8 @@ function getLinuxDistroID() {
       default:
         linuxOS.packmgr = `zip`;
     }
-    return linuxOS
   });
+  return linuxOS
 }
 
 // Returns the URL used to download a specific version of the CSP Driver (either PKCS11 for Linux or CSP for Windows) for a
