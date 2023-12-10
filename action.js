@@ -34,6 +34,7 @@ function getLinuxDistroID() {
         linuxOS.package = `rpm`;
         break;
     }
+    console.log(linuxOS)
     return linuxOS
   });
 }
