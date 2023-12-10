@@ -42,6 +42,7 @@ function getLinuxDistroID() {
       default:
         linuxOS.packmgr = `zip`;
     }
+    linuxOS = linuxOS;
   });
   return linuxOS
 }
