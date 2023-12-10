@@ -22,7 +22,8 @@ async function installCSPDriverPackage(currentOs, cachedPath) {
   var result =  "";
   switch (currentOs) {
     case "Linux":
-      result = await exec.exec('apt', ['install', cachedPath] );
+      //result = await exec.exec('apt', ['install', cachedPath] );
+      result = await exec.exec('sudo', ['apt', 'install', cachedPath] );
       console.log(result)
       break;
 
