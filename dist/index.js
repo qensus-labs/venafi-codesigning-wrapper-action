@@ -25,7 +25,7 @@ function getLinuxDistroID() {
     if (err) throw err
     const lines = data.split('\n')
     const distroRelease = {}
-    let linuxOS = new Object();
+    const linuxOS = new Object();
     lines.forEach((line) => {
       // Split the line into an array of words delimited by '='
       const words = line.split('=')
@@ -49,7 +49,7 @@ function getLinuxDistroID() {
 
 function getCSPDriverFileName(currentOs, version) {
   var file = "";
-  const linuxOS = {};
+  const linuxOS = new Object();
   switch (currentOs) {
     case "Linux":
       linuxOS = getLinuxDistroID();
