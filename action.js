@@ -29,7 +29,7 @@ function getLinuxDistroID() {
     switch (linuxOS.distro) {
       case "debian":
       case "ubuntu":
-        linuxOS.package = `deb`;
+        linuxOS.packmgr = `deb`;
         break;
       case "amzn":
       case "centos":
@@ -37,12 +37,11 @@ function getLinuxDistroID() {
       case "rocky":
       case "ol":
       case "rhel":
-        linuxOS.package = `rpm`;
+        linuxOS.packmgr = `rpm`;
         break;
       default:
-        linuxOS.package = `zip`;
+        linuxOS.packmgr = `zip`;
     }
-    console.log(linuxOS)
     return linuxOS
   });
 }
@@ -52,11 +51,11 @@ function getLinuxDistroID() {
 
 function getCSPDriverFileName(currentOs, version) {
   var file = "";
-  let linuxOS = new Object();
+  let linuxOS = getLinuxDistroID();
+  console.log(linuxOS)
   switch (currentOs) {
     case "Linux":
-      linuxOS = getLinuxDistroID();
-      file = `venafi-csc-${version}-x86_64.${linuxOS.package}`;
+      file = `venafi-csc-${version}-x86_64.${linuxOS.packmgr}`;
       break;
 
     case "Darwin":
