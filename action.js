@@ -53,9 +53,9 @@ async function getLinuxDistroID() {
 // Returns the URL used to download a specific version of the CSP Driver (either PKCS11 for Linux or CSP for Windows) for a
 // specific platform.
 
-function getCSPDriverFileName(currentOs, version) {
+async function getCSPDriverFileName(currentOs, version) {
   var file = "";
-  let linuxOS = getLinuxDistroID();
+  let linuxOS = await getLinuxDistroID();
   console.log(linuxOS)
   switch (currentOs) {
     case "Linux":
