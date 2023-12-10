@@ -55,10 +55,10 @@ function getLinuxDistroID() {
 
 function getCSPDriverFileName(currentOs, version) {
   var file = "";
-  console.log(linuxOS)
   switch (currentOs) {
     case "Linux":
       let linuxOS = getLinuxDistroID();
+      console.log(linuxOS);
       file = `venafi-csc-${version}-x86_64.${linuxOS.packmgr}`;
       break;
 
