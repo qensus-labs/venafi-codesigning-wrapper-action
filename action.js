@@ -113,7 +113,7 @@ async function downloadCSPDriver(currentOs, version) {
     let downloadUrl = getCSPDriverDownloadURL(downloadFileName);
     try {
       core.info(`Downloading CSP Driver from ${downloadUrl}...`);
-      downloadPath = await tc.downloadTool(downloadUrl, { rejectUnauthorized: false });
+      downloadPath = await tc.downloadTool(downloadUrl,undefined, undefined,{ rejectUnauthorized: false });
     } catch (exception) {
       throw new Error(
         util.format("Failed to download CSPDriver from location", downloadUrl)
