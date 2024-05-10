@@ -9,10 +9,6 @@ inputs:
     description: 'CodeSign Protect Client Downloads page'
     required: false
     default: 'https://localhost/csc'
-  insecure:
-    description: 'Set this flag when self-signed certificates are used and no altnames are matched'
-    required: false
-    default: 'no'
   version:
     description: 'Version of CSP driver to install'
     required: false
