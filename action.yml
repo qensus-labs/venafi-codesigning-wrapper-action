@@ -36,5 +36,5 @@ outputs:
   csp-driver-config:
     description: 'Configuration of the installed CSP driver'
 runs:
-  using: 'node12'
+  using: 'node20'
   main: 'dist/index.js'
