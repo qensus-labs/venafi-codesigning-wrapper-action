@@ -114,6 +114,8 @@ async function downloadCSPDriver(currentOs, version) {
   // See if we have cached this tool already
   let cachedToolPath = tc.find(toolName, version);
 
+  core.info(`Found ${cachedToolPath} in cache.`);
+
   // If we did not find the tool in the cache download it now.
   if (!cachedToolPath) {
     let downloadPath;
