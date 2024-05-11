@@ -12,6 +12,8 @@ const toolName = "CSPDriver";
 // does not change this will be able to download any version the CLI.
 const baseURL = core.getInput('csc-url') + '/clients';
 
+// Function to select the install method for installing the required driver using the operating system package manager.
+// Supported installation methods are 'apt', 'rpm' and 'msi'.
 async function installCSPDriverPackage(currentOs, cachedPath) {
   var result =  "";
   switch (currentOs) {
@@ -169,12 +171,12 @@ function findTool(currentOs, rootFolder, fileName) {
   }
 }
 
-// Returns the full name of the executable with extension if any. On Linux and
-// macOS the executable does not have an extension but on Windows it does.
+// Returns the extension of the installation package, determined from the operating system.
+// Default package extension is '.zip'. Other supported package extensions are '.dmg', '.msi'.
 function getExecutableExtension(currentOs) {
   switch (currentOs) {
     case "Linux":
-      fileExtension = ".rpm";
+      fileExtension = ".zip";
       break;
 
     case "Darwin":
@@ -182,9 +184,12 @@ function getExecutableExtension(currentOs) {
       break;
 
     case "Windows_NT":
-    default:
       fileExtension = ".msi";
       break;
+  
+    default:
+      fileExtension = ".zip";
+
   }
 
   return fileExtension;
