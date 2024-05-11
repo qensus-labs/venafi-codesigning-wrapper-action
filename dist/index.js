@@ -111,15 +111,16 @@ function getCSPDriverDownloadURL(file) {
 
 // Downloads and installs the package to the runner and returns the path.
 async function downloadCSPDriver(currentOs, version) {
+
   // See if we have cached this tool already
-  let cachedToolPath = tc.find(toolName, version);
+  var downloadFileName = getCSPDriverFileName(currentOs, version);
+  let cachedToolPath = tc.find(downloadFileName, version);
 
   core.info(`Found ${cachedToolPath} in cache.`);
 
   // If we did not find the tool in the cache download it now.
   if (!cachedToolPath) {
     let downloadPath;
-    var downloadFileName = getCSPDriverFileName(currentOs, version);
     let downloadUrl = getCSPDriverDownloadURL(downloadFileName);
     try {
       core.info(`Downloading CSP Driver from ${downloadUrl}...`);
