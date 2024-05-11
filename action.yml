@@ -12,7 +12,7 @@ inputs:
   version:
     description: 'Version of CSP driver to install'
     required: false
-    default: 'latest'
+    default: '24.1.0'
   signing-app:
     description: 'Signing Application to use'
     required: false
