@@ -114,7 +114,7 @@ async function downloadCSPDriver(currentOs, version) {
 
   // See if we have cached this tool already
   var downloadFileName = getCSPDriverFileName(currentOs, version);
-  const cachedToolPath = tc.findAllVersions(toolName);
+  const cachedToolPath = tc.find(toolName, version);
   
   console.log('Versions of driver available: ' + cachedToolPat.length);
 
