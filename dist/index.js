@@ -155,7 +155,7 @@ async function downloadCSPDriver(currentOs, version) {
 }
 
 // Returns a install path of the desired tool
-function findTool(currentOs, rootFolder, fileName) {
+function findTool(rootFolder, fileName) {
   fs.chmodSync(rootFolder, "777");
 
   // Holds all the paths. The tool might be installed in multiple locations.
