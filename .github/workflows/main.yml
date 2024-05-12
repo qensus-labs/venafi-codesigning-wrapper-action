@@ -32,7 +32,7 @@ jobs:
       - name: Run Library command
         run: python -mvenafi_codesigning_gitlab_integration.version_command
       - name: Sign artifact with JarSigner
-        run: python -mvenafi_codesigning_gitlab_integration.venafi-sign-jarsigner
+        run: python -mvenafi_codesigning_gitlab_integration.jarsigner_sign_command
         env:
           TPP_AUTH_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/auth'
           TPP_HSM_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/hsm'
