@@ -31,3 +31,12 @@ jobs:
         run: pip install venafi-codesigning-gitlab-integration
       - name: Run Library command
         run: python -mvenafi_codesigning_gitlab_integration.version_command
+      - name: Sign artifact with JarSigner
+        run: python -mvenafi_codesigning_gitlab_integration.venafi-sign-jarsigner
+        env:
+          TPP_AUTH_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/auth'
+          TPP_HSM_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/hsm'
+          TPP_USERNAME: cspuser
+          TPP_PASSWORD_BASE64: ${{ secrets.CSP_PASSWORD }}
+          INPUT_PATH: foo.jar
+          CERTIFICATE_LABEL: cert_label
