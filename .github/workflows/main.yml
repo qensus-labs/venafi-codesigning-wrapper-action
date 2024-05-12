@@ -26,7 +26,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-          cache: 'pip' # caching pip dependencies
+          # cache: 'pip' # caching pip dependencies requires requirements.txt
       - name: Install Venafi Integration package
         run: pip install venafi-codesigning-gitlab-integration
       - name: Run Library command
