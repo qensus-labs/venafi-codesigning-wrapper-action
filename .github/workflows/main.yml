@@ -22,3 +22,12 @@ jobs:
           java-version: '21'
       - name: Show JarSigner version
         run: jarsigner -version
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip' # caching pip dependencies
+      - name: Install Venafi Integration package
+        run: pip install venafi-codesigning-gitlab-integration
+      - name: Run Library command
+        run: python -mvenafi_codesigning_gitlab_integration.version_command
