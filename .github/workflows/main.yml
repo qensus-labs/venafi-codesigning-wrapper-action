@@ -6,12 +6,19 @@ jobs:
     runs-on: self-hosted
     name: A job to show example
     steps:
-      - name: CSPDriver step
+      - name: CSPDriver setup
         id: example
         uses: qensus-labs/venafi-codesigning-wrapper-action@v1.0
         with:
           #csc-url: 'https://uvo1gm6lvzt1xsk5n8l.env.cloudshare.com/csc'
           csc-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/csc'
       # Use the output from the `hello` step
-      - name: SHow CSPDriver version
+      - name: Show CSPDriver version
         run: pkcs11config --version
+      - name: Setup Java SDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'oracle' # See 'Supported distributions' for available options
+          java-version: '21'
+      - name: Show JarSigner version
+        run: jarsigner -version
