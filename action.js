@@ -61,8 +61,9 @@ async function downloadCSPDriver(currentOs, version) {
       // Both Linux and macOS use a .tar.gz file
       installedToolPath = await tc.extractTar(downloadPath);
 
-      // Fix to remove usr dir
-      fs.rmdirSync (installedToolPath + `/usr`);
+      // Fix to remove usr dir otherwise broken links exists
+      fs.rmdirSync (installedToolPath + `/usr`, { recursive: true, force: true });
+
     }
 
     // Cache to tool so we do not have to download multiple times
