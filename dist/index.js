@@ -103,7 +103,8 @@ function findTool(currentOs, rootFolder) {
   fileList = walkSync(
     rootFolder,
     fileList,
-    toolName
+    'pkcs11config'
+    // toolName
   );
 
   if (!fileList || fileList.length == 0) {
