@@ -12,110 +12,34 @@ const toolName = "CSPDriver";
 // does not change this will be able to download any version the CLI.
 const baseURL = core.getInput('csc-url') + '/clients';
 
-// Function to select the install method for installing the required driver using the operating system package manager.
-// Supported installation methods are 'apt', 'rpm' and 'msi'.
-async function installCSPDriverPackage(currentOs, cachedPath) {
-  var result =  "";
-  switch (currentOs) {
-    case "Linux":
-      //result = await exec.exec('apt', ['install', cachedPath] );
-      result = await exec.exec('sudo', ['apt', 'install', cachedPath] );
-      console.log(result)
-      break;
-
-    case "Darwin":
-      result = await exec.exec('apt');
-      break;
-
-    case "Windows_NT":
-    default:
-      result = await exec.exec('dir');
-      break;
-  }
-
-  return result;
-}
-
-// Returns the distro name of the linux operating system.
-// Supported distro names are 'rhel','centos', 'rocky', 'ubuntu', 'amzn', 'fedora', 'debian' and 'ol'.
-function getLinuxDistroID() {
-  const linuxOS = new Object();
-  const distroRelease = new Object();
-  try {
-    const data = fs.readFileSync('/etc/os-release', 'utf8');
-    const lines = data.toString().split('\n');
-    lines.forEach((line) => {
-      // Split the line into an array of words delimited by '='
-      const words = line.split('=')
-      distroRelease[words[0].trim().toLowerCase()] = words[1]
-    });
-  } catch (exception) {
-    throw new Error(
-      util.format("Failed to read Linux distribution info from '/etc/os-release'")
-    );
-  }
-  linuxOS.distro = distroRelease.id
-  switch (linuxOS.distro) {
-    case "debian":
-    case "ubuntu":
-      linuxOS.packmgr = `deb`;
-      break;
-    case "amzn":
-    case "centos":
-    case "fedora":
-    case "rocky":
-    case "ol":
-    case "rhel":
-      linuxOS.packmgr = `rpm`;
-      break;
-    default:
-      linuxOS.packmgr = `zip`;
-  }
-  return linuxOS
-}
-
 // Returns the URL used to download a specific version of the CSP Driver (either PKCS11 for Linux or CSP for Windows) for a
 // specific platform.
-
-function getCSPDriverFileName(currentOs, version) {
+function getCSPDriverDownloadURL(currentOs, version) {
   var file = "";
   switch (currentOs) {
     case "Linux":
-      let linuxOS = getLinuxDistroID();
-      console.log(linuxOS);
-      file = `venafi-csc-${version}-x86_64.${linuxOS.packmgr}`;
-      break;
-
-    case "Darwin":
-      file = `venafi-csc-${version}-x86_64.dmg`;
+      file = `venafi-codesigningclients-${version}-linux-x86_64.tar.gz`;
       break;
 
     case "Windows_NT":
     default:
-      file = `venafi-csc-${version}-x86_64.msi`;
+      file = `VenafiCodeSigningClients-${version}-x64.zip`;
       break;
   }
 
-  return file;
-}
-
-function getCSPDriverDownloadURL(file) {
   return util.format("%s/%s", baseURL, file);
 }
 
+
 // Downloads and installs the package to the runner and returns the path.
 async function downloadCSPDriver(currentOs, version) {
-
   // See if we have cached this tool already
-  var downloadFileName = getCSPDriverFileName(currentOs, version);
   let cachedToolPath = tc.find(toolName, version);
-  
-  console.log('Versions of driver available: ' + cachedToolPath );
 
   // If we did not find the tool in the cache download it now.
   if (!cachedToolPath) {
     let downloadPath;
-    let downloadUrl = getCSPDriverDownloadURL(downloadFileName);
+    let downloadUrl = getCSPDriverDownloadURL(currentOs, version);
     try {
       core.info(`Downloading CSP Driver from ${downloadUrl}...`);
       downloadPath = await tc.downloadTool(downloadUrl);
@@ -124,14 +48,26 @@ async function downloadCSPDriver(currentOs, version) {
         util.format("Failed to download CSPDriver from location", downloadUrl)
       );
     }
+    // (chmod a+rwx) sets permissions so that, User / owner can read, can
+    // write and can execute. Group can read, can write and can execute.
+    // Others can read, can write and can execute.
+    fs.chmodSync(downloadPath, "777");
 
-    // Cache the downloaded tool so we do not have to download multiple times
-    cachedToolPath = await tc.cacheFile(downloadPath, downloadFileName , toolName, version);
-    //downloadFileName = getCSPDriverFileName(currentOs, version);
+    // Stores the path where the archive was extracted
+    let installedToolPath;
+    if (currentOs === "Windows_NT") {
+      installedToolPath = await tc.extractZip(downloadPath);
+    } else {
+      // Both Linux and macOS use a .tar.gz file
+      installedToolPath = await tc.extractTar(downloadPath);
+    }
+
+    // Cache to tool so we do not have to download multiple times
+    cachedToolPath = await tc.cacheDir(installedToolPath, toolName, version);
   }
 
   // Get the full path to the executable
-  const toolPath = findTool(currentOs, cachedToolPath, downloadFileName);
+  const toolPath = findTool(currentOs, cachedToolPath);
   if (!toolPath) {
     throw new Error(
       util.format("CSP Driver package not found in path", cachedToolPath)
@@ -174,33 +110,14 @@ function findTool(rootFolder, fileName) {
   }
 }
 
-// Returns the extension of the installation package, determined from the operating system.
-// Default package extension is '.zip'. Other supported package extensions are '.dmg', '.msi'.
+// Returns the full name of the executable with extension if any. On Linux and
+// macOS the executable does not have an extension but on Windows it does.
 function getExecutableExtension(currentOs) {
-  switch (currentOs) {
-    case "Linux":
-      fileExtension = ".zip";
-      break;
-
-    case "Darwin":
-      fileExtension = ".dmg";
-      break;
-
-    case "Windows_NT":
-      fileExtension = ".msi";
-      break;
-  
-    default:
-      fileExtension = ".zip";
-
-  }
-
-  return fileExtension;
+  return currentOs.match(/^Win/) ? ".exe" : "";
 }
 
 // Returns a list of path to the fileToFind in the dir provided.
 function walkSync(dir, fileList, fileToFind) {
-  core.info(`${dir} en ${fileToFind} en ${fileList}`);
   var files = fs.readdirSync(dir);
 
   fileList = fileList || [];
@@ -227,11 +144,7 @@ async function run(currentOs, version) {
   if (!process.env["PATH"].startsWith(path.dirname(cachedPath))) {
     core.addPath(path.dirname(cachedPath));
   }
-  let results = await installCSPDriverPackage(currentOs, cachedPath);
-
-  console.log(
-    `CSP Driver version: '${version}' has been installed ${results}`
-  );
+  
   console.log(
     `CSP Driver version: '${version}' has been cached at ${cachedPath}`
   );
