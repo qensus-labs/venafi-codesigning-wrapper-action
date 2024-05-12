@@ -97,8 +97,7 @@ function findTool(currentOs, rootFolder) {
   fileList = walkSync(
     rootFolder,
     fileList,
-    'pkcs11config'
-    // toolName
+    getExecutableName(currentOs)
   );
 
   if (!fileList || fileList.length == 0) {
@@ -114,8 +113,19 @@ function findTool(currentOs, rootFolder) {
 
 // Returns the full name of the executable with extension if any. On Linux and
 // macOS the executable does not have an extension but on Windows it does.
-function getExecutableExtension(currentOs) {
-  return currentOs.match(/^Win/) ? ".exe" : "";
+function getExecutableName(currentOs) {
+  var executableName = "";
+  switch (currentOs) {
+    case "Linux":
+      executableName = `pkcs11config`;
+      break;
+
+    case "Windows_NT":
+    default:
+      executableName = `CSPConfig.exe`;
+      break;
+  }
+  return executableName;
 }
 
 // Returns a list of path to the fileToFind in the dir provided.
