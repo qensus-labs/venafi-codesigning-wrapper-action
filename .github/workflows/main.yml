@@ -36,7 +36,7 @@ jobs:
         env:
           TPP_AUTH_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/auth'
           TPP_HSM_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/hsm'
-          TPP_USERNAME: cspuser
+          TPP_USERNAME: tppadmin
           TPP_PASSWORD_BASE64: ${{ secrets.CSP_PASSWORD }}
           VENAFI_CLIENT_TOOLS_DIR: '${{ runner.tool_cache }}/CSPDriver/24.1.0/x64/opt/venafi/codesign'
           INPUT_PATH: foo.jar
