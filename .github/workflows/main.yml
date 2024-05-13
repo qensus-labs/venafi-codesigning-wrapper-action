@@ -37,7 +37,7 @@ jobs:
           TPP_AUTH_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth'
           TPP_HSM_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
           TPP_USERNAME: tppadmin
-          TPP_PASSWORD_BASE64: ${{ secrets.CSP_PASSWORD }}
+          TPP_PASSWORD: ${{ secrets.CSP_PASSWORD }}
           VENAFI_CLIENT_TOOLS_DIR: '${{ runner.tool_cache }}/CSPDriver/24.1.0/x64/opt/venafi/codesign'
           INPUT_PATH: foo.jar
           CERTIFICATE_LABEL: cert_label
