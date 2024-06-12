@@ -27,12 +27,12 @@ jobs:
         with:
           python-version: '3.10'
           # cache: 'pip' # caching pip dependencies requires requirements.txt
-      - name: Install Venafi Integration package
-        run: pip install venafi-codesigning-gitlab-integration
+      - name: Install Venafi Python package
+        run: pip install venafi-csp
       - name: Run Library command
-        run: python -mvenafi_codesigning_gitlab_integration.version_command
+        run: python -mvenafi_csp.version_command
       - name: Sign artifact with JarSigner
-        run: python -mvenafi_codesigning_gitlab_integration.jarsigner_sign_command
+        run: python -mvenafi_csp.jarsigner_sign_command
         env:
           TPP_AUTH_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth'
           TPP_HSM_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
