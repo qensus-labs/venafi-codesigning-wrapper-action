@@ -14,7 +14,9 @@ jobs:
           csc-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/csc'
       # Use the output from the `hello` step
       - name: Show CSPDriver version
-        run: pkcs11config --version
+        run: >-
+          pkcs11config --version
+          pkcs11config listobjects
       - name: Setup Java SDK
         uses: actions/setup-java@v4
         with:
