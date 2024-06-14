@@ -22,6 +22,16 @@ jobs:
           java-version: '21'
       - name: Show JarSigner version
         run: jarsigner -version
+      - name: Build foo.jar
+        run: >-
+          echo 'public class Foo { public static void main() { } }' > Foo.java
+          javac Foo.java
+          jar -cf foo.jar Foo.class
+      - name: Store the foo.jar artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: foo.jar
+          path: /
       - name: Setup Python 3.10
         uses: actions/setup-python@v5
         with:
@@ -40,4 +50,4 @@ jobs:
           TPP_PASSWORD: ${{ secrets.CSP_PASSWORD }}
           VENAFI_CLIENT_TOOLS_DIR: '${{ runner.tool_cache }}/CSPDriver/24.1.0/x64/opt/venafi/codesign'
           INPUT_PATH: foo.jar
-          CERTIFICATE_LABEL: cert_label
+          CERTIFICATE_LABEL: qensus-labs-signer
