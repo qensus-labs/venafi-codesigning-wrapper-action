@@ -31,7 +31,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: foo.jar
-          path: /
+          path: foo.jar
       - name: Setup Python 3.10
         uses: actions/setup-python@v5
         with:
