@@ -23,7 +23,7 @@ jobs:
       - name: Show JarSigner version
         run: jarsigner -version
       - name: Build foo.jar
-        run: >-
+        run: |
           echo 'public class Foo { public static void main() { } }' > Foo.java
           javac Foo.java
           jar -cf foo.jar Foo.class
