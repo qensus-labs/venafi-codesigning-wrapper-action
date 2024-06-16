@@ -164,7 +164,7 @@ function getExecutableName(currentOs) {
 
     case "Windows_NT":
     default:
-      executableName = `CSPConfig.exe`;
+      executableName = `cspconfig.exe`;
       break;
   }
   return executableName;
