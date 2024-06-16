@@ -13,7 +13,7 @@ jobs:
           #csc-url: 'https://uvo1gm6lvzt1xsk5n8l.env.cloudshare.com/csc'
           csc-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/csc'
           csp-auth-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth'
-          csp-hsm-url: https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
+          csp-hsm-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
           include-config: 'true'
       # Use the output from the `hello` step
       - name: Show CSPDriver version
