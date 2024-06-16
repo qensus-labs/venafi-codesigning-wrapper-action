@@ -18,6 +18,27 @@ const toolName = "CSPDriver";
 // does not change this will be able to download any version the CLI.
 const baseURL = core.getInput('csc-url') + '/clients';
 
+const authURL = core.getInput('csp-auth-url');
+
+const hsmURL = core.getInput('csp-hsm-url');
+
+
+async function setCSPDriverDefaultConfig(currentOs, cachedPath, authURL, hsmURL) {
+  var result = "";
+  switch (currentOs) {
+    case "Linux":
+      result = await exec.exec(cachedPath, ['seturl',util.format("%s=%s",'--authurl', authURL),util.format("%s=%s",'--hsmurl', hsmURL)] );
+      break;
+
+    case "Windows_NT":
+    default:
+      result = await exec.exec(cachedPath, ['seturl',util.format("%s=%s",'--authurl', authURL),util.format("%s=%s",'--hsmurl', hsmURL)] );
+      break;
+  }
+  return result
+}
+
+
 // Returns the URL used to download a specific version of the CSP Driver (either PKCS11 for Linux or CSP for Windows) for a
 // specific platform.
 function getCSPDriverDownloadURL(currentOs, version) {
@@ -51,7 +72,8 @@ async function downloadCSPDriver(currentOs, version) {
       downloadPath = await tc.downloadTool(downloadUrl);
     } catch (exception) {
       throw new Error(
-        util.format("Failed to download CSPDriver from location", downloadUrl)
+        util.format("Failed to download CSPDriver from location", downloadUrl),
+        core.error(`The following axception occured: ${exception}`)
       );
     }
     // (chmod a+rwx) sets permissions so that, User / owner can read, can
@@ -166,17 +188,26 @@ async function run(currentOs, version) {
   if (!process.env["PATH"].startsWith(path.dirname(cachedPath))) {
     core.addPath(path.dirname(cachedPath));
   }
-  
+
+  let cachedConfig
+
+  if (core.getInput('include-config') == 'true') {
+    cachedConfig = await setCSPDriverDefaultConfig(currentOs, cachedPath, authURL, hsmURL);
+  }
+
   console.log(
     `CSP Driver version: '${version}' has been cached at ${cachedPath}`
   );
 
   // set a an output of this action incase future steps need the path to the tool.
-  core.setOutput("csp-driver-config", cachedPath);
+  core.setOutput("csp-driver-cached-config", cachedConfig);
+  core.setOutput("csp-driver-cached-path", cachedPath);
+  core.setOutput("csp-driver-cached-version", version);
 }
 
 module.exports = {
   run: run,
+  setCSPDriverDefaultConfig: setCSPDriverDefaultConfig,
   downloadCSPDriver: downloadCSPDriver,
   getCSPDriverDownloadURL: getCSPDriverDownloadURL,
 };
