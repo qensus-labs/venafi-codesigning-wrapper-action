@@ -35,7 +35,7 @@ async function setCSPDriverDefaultConfig(currentOs, cachedPath, authURL, hsmURL)
 
 // Returns the URL used to download a specific version of the CSP Driver (either PKCS11 for Linux or CSP for Windows) for a
 // specific platform.
-function getCSPDriverDownloadURL(currentOs, version) {
+function getCSPDriverDownloadURL(baseURL, currentOs, version) {
   var file = "";
   switch (currentOs) {
     case "Linux":
