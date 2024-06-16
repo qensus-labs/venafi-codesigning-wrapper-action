@@ -1,0 +1,23 @@
+on: [push]
+
+jobs:
+  example_job:
+    # runs-on: ubuntu-latest
+    runs-on: ["self-hosted", "Windows", "X64" ]
+    name: A job to show example
+    steps:
+      - name: CSPDriver setup
+        id: example
+        uses: qensus-labs/venafi-codesigning-wrapper-action@v1.0
+        with:
+          #csc-url: 'https://uvo1gm6lvzt1xsk5n8l.env.cloudshare.com/csc'
+          csc-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/csc'
+          csp-auth-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth'
+          csp-hsm-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
+          include-config: 'true'
+      # Use the output from the `hello` step
+      - name: Show output variable values
+        run: |
+          echo "Output \"csp-driver-cached-config\" [${{steps.example.outputs.csp-driver-cached-config}}]"
+          echo "Output \"csp-driver-cached-path\" [${{steps.example.outputs.csp-driver-cached-path}}]"
+          echo "Output \"csp-driver-cached-version\" [${{steps.example.outputs.csp-driver-cached-version}}]"

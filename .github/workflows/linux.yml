@@ -3,7 +3,7 @@ on: [push]
 jobs:
   example_job:
     # runs-on: ubuntu-latest
-    runs-on: self-hosted
+    runs-on: ["self-hosted", "Linux", "X64"]
     name: A job to show example
     steps:
       - name: CSPDriver setup
