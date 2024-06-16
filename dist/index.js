@@ -37,7 +37,7 @@ async function setCSPDriverDefaultConfig(currentOs, cachedPath, authURL, hsmURL)
       result = await exec.exec(cachedPath, ['option','--show'] );
       break;
   }
-  return result.stdout.trim();
+  return result.stdout;
 }
 
 
