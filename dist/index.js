@@ -24,7 +24,14 @@ const hsmURL = core.getInput('csp-hsm-url');
 
 
 async function setCSPDriverDefaultConfig(currentOs, cachedPath, authURL, hsmURL) {
+  
   var result = "";
+  const options = {
+    listeners: {
+      stdout: (data) => { result += data.toString() }
+    }
+  }
+
   switch (currentOs) {
     case "Linux":
       await exec.exec(cachedPath, ['seturl',util.format("%s=%s",'--authurl', authURL),util.format("%s=%s",'--hsmurl', hsmURL)] );
@@ -34,10 +41,10 @@ async function setCSPDriverDefaultConfig(currentOs, cachedPath, authURL, hsmURL)
     case "Windows_NT":
     default:
       await exec.exec(cachedPath, ['seturl',util.format("%s=%s",'--authurl', authURL),util.format("%s=%s",'--hsmurl', hsmURL)] );
-      result = await exec.exec(cachedPath, ['option','--show'] );
+      result = await exec.exec(cachedPath, ['option','--show'], options );
       break;
   }
-  return result.stdout;
+  return result;
 }
 
 
