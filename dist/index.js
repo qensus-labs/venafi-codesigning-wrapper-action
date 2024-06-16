@@ -96,7 +96,7 @@ async function downloadCSPDriver(baseURL, currentOs, version) {
     // Stores the path where the archive was extracted
     let installedToolPath;
     if (currentOs === "Windows_NT") {
-      installedToolPath = await tc.extractZip(downloadPath);
+      installedToolPath = await tc.extractZip(downloadPath + '.zip');
       core.debug(`extractZip: ${installedToolPath}`);
     } else {
       // Both Linux and macOS use a .tar.gz file
