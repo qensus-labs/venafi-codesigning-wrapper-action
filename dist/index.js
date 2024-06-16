@@ -63,6 +63,8 @@ async function downloadCSPDriver(currentOs, version) {
   // See if we have cached this tool already
   let cachedToolPath = tc.find(toolName, version);
 
+  console.log('find: %s', cachedToolPath)  
+
   // If we did not find the tool in the cache download it now.
   if (!cachedToolPath) {
     let downloadPath;
@@ -70,6 +72,7 @@ async function downloadCSPDriver(currentOs, version) {
     try {
       core.info(`Downloading CSP Driver from ${downloadUrl}...`);
       downloadPath = await tc.downloadTool(downloadUrl);
+      console.log('downloadTool: %s', downloadPath) 
     } catch (exception) {
       throw new Error(
         util.format("Failed to download CSPDriver from location", downloadUrl),
@@ -85,10 +88,11 @@ async function downloadCSPDriver(currentOs, version) {
     let installedToolPath;
     if (currentOs === "Windows_NT") {
       installedToolPath = await tc.extractZip(downloadPath);
+      console.log('extractZip: %s', installedToolPath) 
     } else {
       // Both Linux and macOS use a .tar.gz file
       installedToolPath = await tc.extractTar(downloadPath);
-
+      console.log('extractTar: %s', installedToolPath) 
       // Fix to remove usr dir otherwise broken links exists
       fs.rmdirSync (installedToolPath + `/usr`, { recursive: true, force: true });
 
@@ -96,6 +100,8 @@ async function downloadCSPDriver(currentOs, version) {
 
     // Cache to tool so we do not have to download multiple times
     cachedToolPath = await tc.cacheDir(installedToolPath, toolName, version);
+
+    console.log('cacheDir: %s', cachedToolPath) 
   }
 
   // Get the full path to the executable
@@ -163,9 +169,12 @@ function getExecutableName(currentOs) {
 // Returns a list of path to the fileToFind in the dir provided.
 function walkSync(dir, fileList, fileToFind) {
   var files = fs.readdirSync(dir);
+  console.log('readdirSync: %s', files) 
 
   fileList = fileList || [];
   files.forEach(function (file) {
+    let test = fs.statSync(path.join(dir, file)).isDirectory() 
+    console.log('StatSync: %s', test) 
     if (fs.statSync(path.join(dir, file)).isDirectory()) {
       fileList = walkSync(path.join(dir, file), fileList, fileToFind);
     } else {
