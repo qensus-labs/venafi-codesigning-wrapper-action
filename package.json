@@ -4,7 +4,7 @@
   "description": "Repository that contains a wrapper that simplifies using Venafi CodeSigning with Github Actions",
   "main": "index.js",
   "scripts": {
-    "test": "jest --debug --verbose"
+    "test": "jest --coverage"
   },
   "repository": {
     "type": "git",

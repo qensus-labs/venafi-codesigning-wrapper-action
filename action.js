@@ -21,15 +21,17 @@ async function setCSPDriverDefaultConfig(currentOs, cachedPath, authURL, hsmURL)
   var result = "";
   switch (currentOs) {
     case "Linux":
-      result = await exec.exec(cachedPath, ['seturl',util.format("%s=%s",'--authurl', authURL),util.format("%s=%s",'--hsmurl', hsmURL)] );
+      await exec.exec(cachedPath, ['seturl',util.format("%s=%s",'--authurl', authURL),util.format("%s=%s",'--hsmurl', hsmURL)] );
+      result = await exec.exec(cachedPath, ['option','--show'] );
       break;
 
     case "Windows_NT":
     default:
-      result = await exec.exec(cachedPath, ['seturl',util.format("%s=%s",'--authurl', authURL),util.format("%s=%s",'--hsmurl', hsmURL)] );
+      await exec.exec(cachedPath, ['seturl',util.format("%s=%s",'--authurl', authURL),util.format("%s=%s",'--hsmurl', hsmURL)] );
+      result = await exec.exec(cachedPath, ['option','--show'] );
       break;
   }
-  return result
+  return result.stdout.trim()
 }
 
 
@@ -53,11 +55,11 @@ function getCSPDriverDownloadURL(baseURL, currentOs, version) {
 
 
 // Downloads and installs the package to the runner and returns the path.
-async function downloadCSPDriver(currentOs, version) {
+async function downloadCSPDriver(baseURL, currentOs, version) {
   // See if we have cached this tool already
   let cachedToolPath = tc.find(toolName, version);
 
-  console.log('find: %s', cachedToolPath)  
+  core.debug(`find: ${cachedToolPath}`)
 
   // If we did not find the tool in the cache download it now.
   if (!cachedToolPath) {
@@ -66,7 +68,7 @@ async function downloadCSPDriver(currentOs, version) {
     try {
       core.info(`Downloading CSP Driver from ${downloadUrl}...`);
       downloadPath = await tc.downloadTool(downloadUrl);
-      console.log('downloadTool: %s', downloadPath) 
+      core.debug(`downloadTool: ${downloadPath}`);
     } catch (exception) {
       throw new Error(
         util.format("Failed to download CSPDriver from location", downloadUrl),
@@ -82,11 +84,11 @@ async function downloadCSPDriver(currentOs, version) {
     let installedToolPath;
     if (currentOs === "Windows_NT") {
       installedToolPath = await tc.extractZip(downloadPath);
-      console.log('extractZip: %s', installedToolPath) 
+      core.debug(`extractZip: ${installedToolPath}`);
     } else {
       // Both Linux and macOS use a .tar.gz file
       installedToolPath = await tc.extractTar(downloadPath);
-      console.log('extractTar: %s', installedToolPath) 
+      core.debug(`extractTar: ${installedToolPath}`);
       // Fix to remove usr dir otherwise broken links exists
       fs.rmdirSync (installedToolPath + `/usr`, { recursive: true, force: true });
 
@@ -95,7 +97,7 @@ async function downloadCSPDriver(currentOs, version) {
     // Cache to tool so we do not have to download multiple times
     cachedToolPath = await tc.cacheDir(installedToolPath, toolName, version);
 
-    console.log('cacheDir: %s', cachedToolPath) 
+    core.debug(`cacheDir: ${cachedToolPath}`);
   }
 
   // Get the full path to the executable
@@ -163,12 +165,13 @@ function getExecutableName(currentOs) {
 // Returns a list of path to the fileToFind in the dir provided.
 function walkSync(dir, fileList, fileToFind) {
   var files = fs.readdirSync(dir);
-  console.log('readdirSync: %s', files) 
+
+  core.debug(`readdirSync: ${files}`);
 
   fileList = fileList || [];
   files.forEach(function (file) {
-    let test = fs.statSync(path.join(dir, file)).isDirectory() 
-    console.log('StatSync: %s', test) 
+    let statsSync = fs.statSync(path.join(dir, file)).isDirectory() 
+    core.debug(`statSync: ${statsSync}`);
     if (fs.statSync(path.join(dir, file)).isDirectory()) {
       fileList = walkSync(path.join(dir, file), fileList, fileToFind);
     } else {
@@ -186,7 +189,7 @@ function walkSync(dir, fileList, fileToFind) {
 // extracted this function adds it location to the path. This will make sure
 // other steps in your workflow will be able to call the CSP Driver.
 async function run(currentOs, version) {
-  let cachedPath = await downloadCSPDriver(currentOs, version);
+  let cachedPath = await downloadCSPDriver(baseURL, currentOs, version);
 
   if (!process.env["PATH"].startsWith(path.dirname(cachedPath))) {
     core.addPath(path.dirname(cachedPath));
@@ -198,9 +201,7 @@ async function run(currentOs, version) {
     cachedConfig = await setCSPDriverDefaultConfig(currentOs, cachedPath, authURL, hsmURL);
   }
 
-  console.log(
-    `CSP Driver version: '${version}' has been cached at ${cachedPath}`
-  );
+  core.info(`CSP Driver version: '${version}' has been cached at ${cachedPath}`);
 
   // set a an output of this action incase future steps need the path to the tool.
   core.setOutput("csp-driver-cached-config", cachedConfig);
