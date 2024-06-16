@@ -29,13 +29,13 @@ async function setCSPDriverDefaultConfig(currentOs, cachedPath, authURL, hsmURL)
   switch (currentOs) {
     case "Linux":
       await exec.exec(cachedPath, ['seturl',util.format("%s=%s",'--authurl', authURL),util.format("%s=%s",'--hsmurl', hsmURL)] );
-      result = await exec.exec(cachedPath, ['option','--show'] );
+      await exec.exec(cachedPath, ['option','--show'], options );
       break;
 
     case "Windows_NT":
     default:
       await exec.exec(cachedPath, ['seturl',util.format("%s=%s",'--authurl', authURL),util.format("%s=%s",'--hsmurl', hsmURL)] );
-      result = await exec.exec(cachedPath, ['option','--show'], options );
+      await exec.exec(cachedPath, ['option','--show'], options );
       break;
   }
   return result;
