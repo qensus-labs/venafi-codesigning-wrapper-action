@@ -21,3 +21,11 @@ jobs:
           echo "Output \"csp-driver-cached-version\" [${{steps.cspdriver.outputs.csp-driver-cached-version}}]"
       - name: Check CSPDriver (version)
         run: cspconfig.exe version
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install Venafi Python package
+        run: pip install venafi-csp
+      - name: Run Library command
+        run: python -mvenafi_csp.version_command
