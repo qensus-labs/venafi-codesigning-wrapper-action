@@ -5,24 +5,22 @@ jobs:
   example_job:
     # runs-on: ubuntu-latest
     runs-on: ["self-hosted", "Linux", "X64"]
-    name: A job to show example
+    name: Example with self-hosted Linux runner
     steps:
-      - name: CSPDriver setup
-        id: example
+      - name: Setup CSPDriver
+        id: cspdriver
         uses: qensus-labs/venafi-codesigning-wrapper-action@v1.0.0
         with:
-          #csc-url: 'https://uvo1gm6lvzt1xsk5n8l.env.cloudshare.com/csc'
-          csc-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/csc'
-          csp-auth-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth'
-          csp-hsm-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
+          tpp-csc-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/csc'
+          tpp-auth-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth'
+          tpp-hsm-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
           include-config: 'true'
-      # Use the output from the `hello` step
-      - name: Show output variable values
+      - name: Display output values
         run: |
-          echo "Output \"csp-driver-cached-config\" [${{steps.example.outputs.csp-driver-cached-config}}]"
-          echo "Output \"csp-driver-cached-path\" [${{steps.example.outputs.csp-driver-cached-path}}]"
-          echo "Output \"csp-driver-cached-version\" [${{steps.example.outputs.csp-driver-cached-version}}]"
-      - name: Show CSPDriver version
+          echo "Output \"csp-driver-cached-config\" [${{steps.cspdriver.outputs.csp-driver-cached-config}}]"
+          echo "Output \"csp-driver-cached-path\" [${{steps.cspdriver.outputs.csp-driver-cached-path}}]"
+          echo "Output \"csp-driver-cached-version\" [${{steps.cspdriver.outputs.csp-driver-cached-version}}]"
+      - name: Check CSPDriver (version)
         run: pkcs11config --version
       - name: Setup Java SDK
         uses: actions/setup-java@v4
@@ -56,7 +54,7 @@ jobs:
           TPP_AUTH_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth'
           TPP_HSM_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
           TPP_USERNAME: signer
-          TPP_PASSWORD: ${{ secrets.CSP_PASSWORD }}
+          TPP_PASSWORD: ${{ secrets.TPP_PASSWORD }}
           VENAFI_CLIENT_TOOLS_DIR: '${{ runner.tool_cache }}/CSPDriver/24.1.0/x64/opt/venafi/codesign'
           INPUT_PATH: foo.jar
           CERTIFICATE_LABEL: github-signer-development-codesigner
