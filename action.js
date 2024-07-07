@@ -10,11 +10,11 @@ const toolName = "CSPDriver";
 
 // Base form of the the URL to download the release archives. As long as this
 // does not change this will be able to download any version the CLI.
-const baseURL = core.getInput('csc-url') + '/clients';
+const baseURL = core.getInput('tpp-csc-url') + '/clients';
 
-const authURL = core.getInput('csp-auth-url');
+const authURL = core.getInput('tpp-auth-url');
 
-const hsmURL = core.getInput('csp-hsm-url');
+const hsmURL = core.getInput('tpp-hsm-url');
 
 
 async function setCSPDriverDefaultConfig(currentOs, cachedPath, authURL, hsmURL) {

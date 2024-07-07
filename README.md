@@ -132,6 +132,7 @@ jobs:
     name: Example with self-hosted Linux runner
     steps:
       - name: Setup CSPDriver
+        id: cspdriver
         uses: qensus-labs/venafi-codesigning-wrapper-action@v1.0.0
         with:
           tpp-version: '24.1.0'
@@ -141,9 +142,9 @@ jobs:
           include-config: 'true'
       - name: Display output values
         run: |
-          echo "Output \"csp-driver-cached-config\" [${{steps.example.outputs.csp-driver-cached-config}}]"
-          echo "Output \"csp-driver-cached-path\" [${{steps.example.outputs.csp-driver-cached-path}}]"
-          echo "Output \"csp-driver-cached-version\" [${{steps.example.outputs.csp-driver-cached-version}}]"
+          echo "Output \"csp-driver-cached-config\" [${{steps.cspdriver.outputs.csp-driver-cached-config}}]"
+          echo "Output \"csp-driver-cached-path\" [${{steps.cspdriver.outputs.csp-driver-cached-path}}]"
+          echo "Output \"csp-driver-cached-version\" [${{steps.cspdriver.outputs.csp-driver-cached-version}}]"
       - name: Check CSPDriver (version)
         run: pkcs11config --version
       - name: Setup Java SDK
@@ -195,6 +196,7 @@ jobs:
     name: Example with self-hosted Windows runner
     steps:
       - name: Setup CSPDriver
+        id: cspdriver
         uses: qensus-labs/venafi-codesigning-wrapper-action@v1.0.0
         with:
           tpp-version: '24.1.0'
@@ -204,11 +206,11 @@ jobs:
           include-config: 'true'
       - name: Display output values
         run: |
-          echo "Output \"csp-driver-cached-config\" [${{steps.example.outputs.csp-driver-cached-config}}]"
-          echo "Output \"csp-driver-cached-path\" [${{steps.example.outputs.csp-driver-cached-path}}]"
-          echo "Output \"csp-driver-cached-version\" [${{steps.example.outputs.csp-driver-cached-version}}]"
+          echo "Output \"csp-driver-cached-config\" [${{steps.cspdriver.outputs.csp-driver-cached-config}}]"
+          echo "Output \"csp-driver-cached-path\" [${{steps.cspdriver.outputs.csp-driver-cached-path}}]"
+          echo "Output \"csp-driver-cached-version\" [${{steps.cspdriver.outputs.csp-driver-cached-version}}]"
       - name: Check CSPDriver (version)
-        run: pkcs11config --version
+        run: cspconfig.exe version
 ```
 
 ## Contribution & development

@@ -14,7 +14,7 @@ This is how the action is used:
 async function run() {
   try {
     // Get the users input of the with
-    const version = core.getInput("version");
+    const version = core.getInput("tpp-version");
     core.info(`Installing CSP Driver version ${version}...`);
 
     // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
