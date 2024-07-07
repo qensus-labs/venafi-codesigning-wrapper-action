@@ -16,11 +16,11 @@ const toolName = "CSPDriver";
 
 // Base form of the the URL to download the release archives. As long as this
 // does not change this will be able to download any version the CLI.
-const baseURL = core.getInput('csc-url') + '/clients';
+const baseURL = core.getInput('tpp-csc-url') + '/clients';
 
-const authURL = core.getInput('csp-auth-url');
+const authURL = core.getInput('tpp-auth-url');
 
-const hsmURL = core.getInput('csp-hsm-url');
+const hsmURL = core.getInput('tpp-hsm-url');
 
 
 async function setCSPDriverDefaultConfig(currentOs, cachedPath, authURL, hsmURL) {
@@ -6992,7 +6992,7 @@ This is how the action is used:
 async function run() {
   try {
     // Get the users input of the with
-    const version = core.getInput("version");
+    const version = core.getInput("tpp-version");
     core.info(`Installing CSP Driver version ${version}...`);
 
     // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
