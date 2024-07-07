@@ -13,10 +13,10 @@ inputs:
     description: 'Version of CSP driver to install'
     required: false
     default: '24.1.0'
-  signing-app:
-    description: 'Signing Application to use'
+  include-config:
+    description: 'Generate a default configuration'
     required: false
-    default: 'jarsigner'
+    default: 'false'
   csp-auth-url:
     description: 'The CSP authorization URL'
     required: false
@@ -33,8 +33,12 @@ inputs:
     description: 'The password associated with the login username'
     required: false
 outputs:
-  csp-driver-config:
-    description: 'Configuration of the installed CSP driver'
+  csp-driver-cached-config:
+    description: 'Configuration of the cached CSP Driver package'
+  csp-driver-cached-path:
+    description: 'Path of the cached CSP Driver package'
+  csp-driver-cached-version:
+    description: 'Version of the cached CSP Driver package'
 runs:
   using: 'node20'
   main: 'dist/index.js'
