@@ -28,4 +28,5 @@ jobs:
       - name: Install Venafi Python package
         run: pip install venafi-csp
       - name: Run Library command
+        shell: cmd
         run: python -mvenafi_csp.version_command
