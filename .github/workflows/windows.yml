@@ -39,3 +39,4 @@ jobs:
       - name: Run signtool
         run: |
           Get-ChildItem -Path Env:
+          echo  $Env:GITHUB_PATH
