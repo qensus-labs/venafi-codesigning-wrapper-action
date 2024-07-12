@@ -36,7 +36,16 @@ jobs:
           sdk-version: 20348
       - name: Add SDK (20348) to GITHUB_PATH
         run: |
-          New-Item -ItemType HardLink -Path ./signtool.exe -Target "$Env:ProgramFiles (x86)\Windows Kits\10\bin\10.0.20348.0\x64\signtool.exe"
-      - name: Run signtool
+          echo "C:\Program files (x86)\Windows Kits\10\bin\10.0.20348.0\x64" >> $GITHUB_PATH
+        shell: bash
+      - name: Run signtool CMD
         run: |
-          ./signtool.exe /?
+          signtool.exe /?
+        shell: cmd
+      - name: Run signtool Bash
+        run: |
+          signtool.exe /?
+        shell: bash
+      - name: Run signtool PS
+        run: |
+          signtool.exe /?
