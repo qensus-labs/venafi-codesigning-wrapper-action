@@ -24,6 +24,8 @@ jobs:
           cspconfig.exe version
           cspconfig.exe getgrant --username=signer --password=${{ secrets.TPP_PASSWORD }} --hsmurl=https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm/ --authurl=https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth/
           cspconfig.exe listcertificates
+          cspconfig.exe sync
+          cspconfig.exe listcertificates
       - name: Build foo.exe
         run: |
           copy C:\Windows\System32\Notepad.exe foo.exe
