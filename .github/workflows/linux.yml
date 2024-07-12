@@ -58,3 +58,13 @@ jobs:
           VENAFI_CLIENT_TOOLS_DIR: '${{ runner.tool_cache }}/CSPDriver/24.1.0/x64/opt/venafi/codesign'
           INPUT_PATH: foo.jar
           CERTIFICATE_LABEL: github-signer-development-codesigner
+      - name: verify artifact with JarSigner
+        run: python -mvenafi_csp.jarsigner_verify_command
+        env:
+          TPP_AUTH_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth'
+          TPP_HSM_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
+          TPP_USERNAME: signer
+          TPP_PASSWORD: ${{ secrets.TPP_PASSWORD }}
+          VENAFI_CLIENT_TOOLS_DIR: '${{ runner.tool_cache }}/CSPDriver/24.1.0/x64/opt/venafi/codesign'
+          INPUT_PATH: foo.jar
+          CERTIFICATE_LABEL: github-signer-development-codesigner
