@@ -36,7 +36,7 @@ jobs:
           sdk-version: 20348
       - name: Add SDK (20348) to GITHUB_PATH
         run: |
-          "C:\Program files (x86)\Windows Kits\10\bin\10.0.20348.0\x64" >> $env:GITHUB_PATH
+          "C:\Progra files (x86)\Windows Kits\10\bin\10.0.20348.0\x64" >> $env:GITHUB_PATH
       - name: Run signtool
         run: |
           echo $env:Path
