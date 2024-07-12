@@ -34,18 +34,13 @@ jobs:
         uses: GuillaumeFalourd/setup-windows10-sdk-action@v2
         with:
           sdk-version: 20348
-      - name: Add SDK (20348) to PATH
+      - name: Add SDK (20348) to GITHUB_PATH
         run: |
-          setx PATH "%PATH%;C:\Program files (x86)\Windows Kits\10\bin\10.0.20348.0\x64"
-        shell: cmd
-      - name: Run signtool CMD
+          "C:\Program files (x86)\Windows Kits\10\bin\10.0.20348.0\x64" >> $env:GITHUB_PATH
+      - name: Run signtool
+        run: |
+          signtool.exe /?
+      - name: Run signtool cmd
         run: |
           signtool.exe /?
         shell: cmd
-      - name: Run signtool Bash
-        run: |
-          signtool.exe /?
-        shell: bash
-      - name: Run signtool PS
-        run: |
-          signtool.exe /?
