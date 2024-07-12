@@ -36,7 +36,7 @@ jobs:
           sdk-version: 20348
       - name: Add SDK (20348) to PATH
         run: |
-          setx /M PATH "%PATH%;C:\Program files (x86)\Windows Kits\10\bin\10.0.20348.0\x64"
+          setx PATH "%PATH%;C:\Program files (x86)\Windows Kits\10\bin\10.0.20348.0\x64"
         shell: cmd
       - name: Run signtool CMD
         run: |
