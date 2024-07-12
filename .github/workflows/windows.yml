@@ -22,6 +22,7 @@ jobs:
       - name: Check CSPDriver (version)
         run: |
           cspconfig.exe version
+          cspconfig.exe getgrant --username=signer --password=${{ secrets.TPP_PASSWORD }} --hsmurl=https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm/ --authurl=https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth/
           cspconfig.exe listcertificates
       - name: Build foo.exe
         run: |
