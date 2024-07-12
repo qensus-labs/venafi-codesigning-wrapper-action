@@ -20,7 +20,9 @@ jobs:
           echo "Output \"csp-driver-cached-path\" [${{steps.cspdriver.outputs.csp-driver-cached-path}}]"
           echo "Output \"csp-driver-cached-version\" [${{steps.cspdriver.outputs.csp-driver-cached-version}}]"
       - name: Check CSPDriver (version)
-        run: cspconfig.exe version
+        run: |
+          cspconfig.exe version
+          cspconfig.exe listcertificates
       - name: Build foo.exe
         run: |
           copy C:\Windows\System32\Notepad.exe foo.exe
