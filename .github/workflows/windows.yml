@@ -20,4 +20,49 @@ jobs:
           echo "Output \"csp-driver-cached-path\" [${{steps.cspdriver.outputs.csp-driver-cached-path}}]"
           echo "Output \"csp-driver-cached-version\" [${{steps.cspdriver.outputs.csp-driver-cached-version}}]"
       - name: Check CSPDriver (version)
-        run: cspconfig.exe version
+        run: |
+          cspconfig.exe version
+          cspconfig.exe getgrant --username=signer --password=${{ secrets.TPP_PASSWORD }} --hsmurl=https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm/ --authurl=https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth/
+          cspconfig.exe listcertificates
+          cspconfig.exe sync
+          cspconfig.exe listcertificates
+      - name: Build foo.exe
+        run: |
+          copy C:\Windows\System32\Notepad.exe foo.exe
+      - name: Store the foo.exe artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: foo.exe
+          path: foo.exe
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install Venafi Python package
+        run: pip install venafi-csp
+      - name: Run Library command
+        shell: cmd
+        run: python -mvenafi_csp.version_command
+      - name: Setup Windows SDK
+        uses: GuillaumeFalourd/setup-windows10-sdk-action@v2
+        with:
+          sdk-version: 20348
+      - name: Add SDK (20348) to GITHUB_PATH
+        run: |
+          "C:\Program files (x86)\Windows Kits\10\bin\10.0.20348.0\x64" >> $env:GITHUB_PATH
+      - name: Run signtool
+        run: |
+          echo $env:Path
+          signtool.exe /?
+      - name: Sign artifact with signtool
+        shell: cmd
+        run: python -mvenafi_csp.signtool_sign_command
+        env:
+          TPP_AUTH_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth'
+          TPP_HSM_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
+          TPP_USERNAME: signer
+          TPP_PASSWORD: ${{ secrets.TPP_PASSWORD }}
+          VENAFI_CLIENT_TOOLS_DIR: '${{ runner.tool_cache }}/CSPDriver/24.1.0/x64'
+          INPUT_PATH: foo.exe
+          CERTIFICATE_SUBJECT_NAME: venafidemo-TLSPD-CA
+          TIMESTAMPING_SERVERS: http://timestamp.digicert.com
