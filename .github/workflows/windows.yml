@@ -39,6 +39,7 @@ jobs:
           "C:\Program files (x86)\Windows Kits\10\bin\10.0.20348.0\x64" >> $env:GITHUB_PATH
       - name: Run signtool
         run: |
+          echo $env:GITHUB_PATH
           signtool.exe /?
       - name: Run signtool cmd
         run: |
