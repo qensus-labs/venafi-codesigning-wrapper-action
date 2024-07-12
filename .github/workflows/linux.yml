@@ -14,7 +14,7 @@ jobs:
           tpp-csc-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/csc'
           tpp-auth-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth'
           tpp-hsm-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
-          include-config: 'true'
+          include-config: 'false'
       - name: Display output values
         run: |
           echo "Output \"csp-driver-cached-config\" [${{steps.cspdriver.outputs.csp-driver-cached-config}}]"
