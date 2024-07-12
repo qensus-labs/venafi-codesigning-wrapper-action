@@ -50,6 +50,7 @@ jobs:
           echo $env:Path
           signtool.exe /?
       - name: Sign artifact with signtool
+        shell: cmd
         run: python -mvenafi_csp.signtool_sign_command
         env:
           TPP_AUTH_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth'
