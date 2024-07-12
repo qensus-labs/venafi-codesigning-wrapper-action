@@ -58,6 +58,6 @@ jobs:
           TPP_USERNAME: signer
           TPP_PASSWORD: ${{ secrets.TPP_PASSWORD }}
           VENAFI_CLIENT_TOOLS_DIR: '${{ runner.tool_cache }}/CSPDriver/24.1.0/x64/opt/venafi/codesign'
-          INPUT_PATH: foo.exe
+          INPUT_PATH: fooo.exe
           CERTIFICATE_SUBJECT_NAME: github-signer-development-codesigner
           TIMESTAMPING_SERVERS: http://timestamp.digicert.com
