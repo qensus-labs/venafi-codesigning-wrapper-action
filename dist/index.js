@@ -11,8 +11,8 @@ const core = __nccwpck_require__(6024);
 const tc = __nccwpck_require__(3594);
 const exec = __nccwpck_require__(2423);
 
-// The name of the tool we are installing with this action.
-const toolName = "CSPDriver";
+// The name of the tool we are installing with this action, which is 'Venafi Code Sign Protect'
+const toolName = "Venafi_CSP";
 
 // Base form of the the URL to download the release archives. As long as this
 // does not change this will be able to download any version the CLI.
