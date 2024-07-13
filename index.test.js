@@ -10,9 +10,9 @@ describe("run", () => {
   test("should untar Linux archive", async () => {
     // Arrange
     jest.spyOn(tc, "find").mockReturnValue();
-    jest.spyOn(tc, "cacheDir").mockReturnValue("/home/sysadmin/actions-runner/_work/_tool/CSPDriver/24.1.0/x64");
-    let extractTar = jest.spyOn(tc, "extractTar").mockReturnValue("/home/sysadmin/actions-runner/_work/_temp/CSPDriver");
-    jest.spyOn(tc, "downloadTool").mockReturnValue("/home/sysadmin/actions-runner/_work/_temp/CSPDriver");
+    jest.spyOn(tc, "cacheDir").mockReturnValue("/home/sysadmin/actions-runner/_work/_tool/Venafi_CSP/24.1.0/x64");
+    let extractTar = jest.spyOn(tc, "extractTar").mockReturnValue("/home/sysadmin/actions-runner/_work/_temp/Venafi_CSP");
+    jest.spyOn(tc, "downloadTool").mockReturnValue("/home/sysadmin/actions-runner/_work/_temp/Venafi_CSP");
 
     jest.spyOn(fs, "chmodSync").mockReturnValue();
     jest.spyOn(fs, "readdirSync").mockReturnValue(["pkcs11config"]);
@@ -60,9 +60,9 @@ describe("getCSPDriverDownloadURL", () => {
 describe("download CSPDriver", () => {
   test("should return toolPath", async () => {
     // Arrange
-    jest.spyOn(tc, "find").mockReturnValue("/home/sysadmin/actions-runner/_work/_tool/CSPDriver/24.1.0/x64");
+    jest.spyOn(tc, "find").mockReturnValue("/home/sysadmin/actions-runner/_work/_tool/Venafi_CSP/24.1.0/x64");
 
-    jest.spyOn(path, "join").mockReturnValue("/home/sysadmin/actions-runner/_work/_tool/CSPDriver/24.1.0/x64/opt/venafi/codesign/bin/pkcs11config");
+    jest.spyOn(path, "join").mockReturnValue("/home/sysadmin/actions-runner/_work/_tool/Venafi_CSP/24.1.0/x64/opt/venafi/codesign/bin/pkcs11config");
 
     jest.spyOn(fs, "chmodSync").mockReturnValue();
     jest.spyOn(fs, "readdirSync").mockReturnValue(["pkcs11config"]);
@@ -78,7 +78,7 @@ describe("download CSPDriver", () => {
     // Assert
     // Restore mocks so the testing framework can use the fs functions
     jest.restoreAllMocks();
-    expect(actual).toBe("/home/sysadmin/actions-runner/_work/_tool/CSPDriver/24.1.0/x64/opt/venafi/codesign/bin/pkcs11config");
+    expect(actual).toBe("/home/sysadmin/actions-runner/_work/_tool/Venafi_CSP/24.1.0/x64/opt/venafi/codesign/bin/pkcs11config");
   });
 
   test("should throw if CSPDriver can't be found", async () => {
@@ -87,10 +87,10 @@ describe("download CSPDriver", () => {
     // was not thrown
     expect.assertions(3);
 
-    jest.spyOn(tc, "find").mockReturnValue("/home/sysadmin/actions-runner/_work/_tool/CSPDriver/24.1.0/x64");
-    jest.spyOn(tc, "cacheDir").mockReturnValue("/home/sysadmin/actions-runner/_work/_tool/CSPDriver/24.1.0/x64");
+    jest.spyOn(tc, "find").mockReturnValue("/home/sysadmin/actions-runner/_work/_tool/Venafi_CSP/24.1.0/x64");
+    jest.spyOn(tc, "cacheDir").mockReturnValue("/home/sysadmin/actions-runner/_work/_tool/Venafi_CSP/24.1.0/x64");
     let extractTar = jest.spyOn(tc, "extractTar").mockReturnValue();
-    jest.spyOn(tc, "downloadTool").mockReturnValue("/home/sysadmin/actions-runner/_work/_temp/CSPDriver");
+    jest.spyOn(tc, "downloadTool").mockReturnValue("/home/sysadmin/actions-runner/_work/_temp/Venafi_CSP");
 
     jest.spyOn(path, "join").mockReturnValue("");
 
@@ -123,7 +123,7 @@ describe("download CSPDriver", () => {
       expect(error).toBeInstanceOf(Error);
       expect(error).toHaveProperty(
         "message",
-        "CSP Driver package not found in path /home/sysadmin/actions-runner/_work/_tool/CSPDriver/24.1.0/x64"
+        "CSP Driver package not found in path /home/sysadmin/actions-runner/_work/_tool/Venafi_CSP/24.1.0/x64"
       );
 
       // Number of calls should be zero because of the error
