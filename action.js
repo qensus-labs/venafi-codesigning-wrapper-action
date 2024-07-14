@@ -156,8 +156,9 @@ async function downloadCSPDriver(baseURL, currentOs, currentDistro, version) {
 
   // Do we have the package installed and which version?
   // Do we need to replace or skip
-  const packageInfo = checkCSPDriverSetup(currentOs, currentDistro, version);
-  core.debug(`PackageInfo: ${packageInfo}`)
+  const packageInfo = await checkCSPDriverSetup(currentOs, currentDistro, version);
+  core.debug(`PackageInfo: ${packageInfo}`);
+  console.log(packageInfo);
 
   // Generate all information for the CSPDriver Download specification
   const download = getCSPDriverDownloadInfo(baseURL,currentOs,currentDistro, version);
@@ -203,7 +204,7 @@ async function downloadCSPDriver(baseURL, currentOs, currentDistro, version) {
   core.debug(`Installation results: ${setupPackage}`);
 
   // Get the full path to the executable
-  const toolPath = findTool(currentOs, cachedToolPath, download.savefile);
+  const toolPath = findTool(cachedToolPath, download.savefile);
   if (!toolPath) {
     throw new Error(
       util.format("CSP Driver package not found in path", cachedToolPath)
