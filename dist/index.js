@@ -25,6 +25,45 @@ const authURL = core.getInput('tpp-auth-url');
 
 const hsmURL = core.getInput('tpp-hsm-url');
 
+// Supported distro names are 'rhel','centos', 'rocky', 'ubuntu', 'amzn', 'fedora', 'debian' and 'ol'.
+async function installCSPDriverPackage(cachedToolPath, packageName, currentOs, currentDistro) {
+  const debDistrolist = ['ubuntu', 'debian'];
+  const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
+  var packageInstaller;
+  var result = "";
+  const options = {
+    listeners: {
+      stdout: (data) => { result += data.toString() }
+    }
+  }
+
+  if (currentOs == 'Linux' && debDistrolist.includes(currentDistro)) {
+    packageInstaller = 'dpkg'
+    await exec.exec('sudo', [packageInstaller, '-i', packageName, options ] );
+  }
+  else if (currentOs == 'Linux' && rhelDistrolist.includes(currentDistro)) {
+    packageInstaller = 'rpm'
+    await exec.exec('sudo', [packageInstaller, '-Uvh', packageName, options ] );
+  }
+  else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
+    // start /wait msiexec /qn /i "VenafiCodeSigningClients-24.1.0-x64.msi"
+    packageInstaller = 'msiexec'
+    await exec.exec('start', ['/wait', packageInstaller, '/qn', '/i', packageName, options ] );
+  }
+  else if (currentOs == 'Darwin' && currentDistro == 'default') {
+    // mkdir -p installer
+    // sudo hdiutil attach "Venafi CodeSign Protect Clients v24.1.0-universal.dmg" -noautoopen -mountpoint installer/
+    // sudo installer -pkg "installer/Venafi CodeSign Protect Clients.pkg/" -target /
+    // sudo hdiutil detach installer
+    packageInstaller = 'installer'
+    await exec.exec('sudo', [packageInstaller, '-pkg', '"installer/Venafi CodeSign Protect Clients.pkg/"', '-target', '/', options ] );
+  }
+  else {
+    console.log('Unsupported operating system or distribution detected');
+  }
+  return result;
+}
+
 async function setCSPDriverDefaultConfig(currentOs, cachedPath, authURL, hsmURL) {
   
   var result = "";
@@ -113,26 +152,14 @@ async function downloadCSPDriver(baseURL, currentOs, currentDistro, version) {
     // Others can read, can write and can execute.
     fs.chmodSync(downloadPath, "777");
 
-    // Stores the path where the archive was extracted
-    let installedToolPath;
-    if (currentOs === "Windows_NT") {
-      fs.renameSync(downloadPath, downloadPath + '.zip' );
-      installedToolPath = await tc.extractZip(downloadPath + '.zip',downloadPath);
-      core.debug(`extractZip: ${installedToolPath}`);
-    } else {
-      // Both Linux and macOS use a .tar.gz file
-      installedToolPath = await tc.extractTar(downloadPath);
-      core.debug(`extractTar: ${installedToolPath}`);
-      // Fix to remove usr dir otherwise broken links exists
-      fs.rmdirSync (installedToolPath + `/usr`, { recursive: true, force: true });
-
-    }
-
-    // Cache to tool so we do not have to download multiple times
-    cachedToolPath = await tc.cacheDir(installedToolPath, toolName, version);
-
+    // Cache the downloaded installationfile to the tool-cache folder.
+    cachedToolPath = await tc.cacheFile(downloadPath, download.savefile, toolName, version);
     core.debug(`cacheDir: ${cachedToolPath}`);
   }
+  
+  // Now that we have the install package let's installl this for the currentOs + distribution
+  var setupPackage = await installCSPDriverPackage(cachedToolPath, download.savefile, currentOs, currentDistro);
+  core.debug(`Installation results: ${setupPackage}`);
 
   // Get the full path to the executable
   const toolPath = findTool(currentOs, cachedToolPath);
