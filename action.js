@@ -33,16 +33,16 @@ async function installCSPDriverPackage(cachedToolPath, packageName, currentOs, c
 
   if (currentOs == 'Linux' && debDistrolist.includes(currentDistro)) {
     packageInstaller = 'dpkg'
-    await exec.exec('sudo', [packageInstaller, '-i', util.format("%s/%s",cachedToolPath, packageName), options ] );
+    await exec.exec('sudo', [packageInstaller, '-i', util.format("%s/%s",cachedToolPath, packageName) ], options );
   }
   else if (currentOs == 'Linux' && rhelDistrolist.includes(currentDistro)) {
     packageInstaller = 'rpm'
-    await exec.exec('sudo', [packageInstaller, '-Uvh', util.format("%s/%s",cachedToolPath, packageName), options ] );
+    await exec.exec('sudo', [packageInstaller, '-Uvh', util.format("%s/%s",cachedToolPath, packageName) ], options );
   }
   else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
     // start /wait msiexec /qn /i "VenafiCodeSigningClients-24.1.0-x64.msi"
     packageInstaller = 'msiexec'
-    await exec.exec('start', ['/wait', packageInstaller, '/qn', '/i', util.format("%s/%s",cachedToolPath, packageName), options ] );
+    await exec.exec('start', ['/wait', packageInstaller, '/qn', '/i', util.format("%s/%s",cachedToolPath, packageName) ], options );
   }
   else if (currentOs == 'Darwin' && currentDistro == 'default') {
     // mkdir -p installer
@@ -50,7 +50,7 @@ async function installCSPDriverPackage(cachedToolPath, packageName, currentOs, c
     // sudo installer -pkg "installer/Venafi CodeSign Protect Clients.pkg/" -target /
     // sudo hdiutil detach installer
     packageInstaller = 'installer'
-    await exec.exec('sudo', [packageInstaller, '-pkg', '"installer/Venafi CodeSign Protect Clients.pkg/"', '-target', '/', options ] );
+    await exec.exec('sudo', [packageInstaller, '-pkg', '"installer/Venafi CodeSign Protect Clients.pkg/"', '-target', '/' ], options );
   }
   else {
     console.log('Unsupported operating system or distribution detected');
