@@ -14,6 +14,9 @@ const exec = __nccwpck_require__(2423);
 // The name of the tool we are installing with this action, which is 'Venafi Code Sign Protect'
 const toolName = "Venafi_CSP";
 
+// The architecture of the system to install the package on. Most scenarios 'intel' is applicable.
+const architecture = core.getInput('architecture');
+
 // Base form of the the URL to download the release archives. As long as this
 // does not change this will be able to download any version the CLI.
 const baseURL = core.getInput('tpp-csc-url') + '/clients';
@@ -21,7 +24,6 @@ const baseURL = core.getInput('tpp-csc-url') + '/clients';
 const authURL = core.getInput('tpp-auth-url');
 
 const hsmURL = core.getInput('tpp-hsm-url');
-
 
 async function setCSPDriverDefaultConfig(currentOs, cachedPath, authURL, hsmURL) {
   
@@ -48,27 +50,45 @@ async function setCSPDriverDefaultConfig(currentOs, cachedPath, authURL, hsmURL)
 }
 
 
-// Returns the URL used to download a specific version of the CSP Driver (either PKCS11 for Linux or CSP for Windows) for a
-// specific platform.
-function getCSPDriverDownloadURL(baseURL, currentOs, version) {
+// Returns an object with the URL and savefile used to download a specific version of the CSP Driver (either PKCS11 for Linux or CSP for Windows) for a
+// specific operating system, distribution and architecture. 
+// Supported distro names are 'rhel','centos', 'rocky', 'ubuntu', 'amzn', 'fedora', 'debian' and 'ol'.
+function getCSPDriverDownloadURL(baseURL, currentOs, currentDistro, version) {
+  var url = "";
   var file = "";
-  switch (currentOs) {
-    case "Linux":
-      file = `venafi-codesigningclients-${version}-linux-x86_64.tar.gz`;
-      break;
-
-    case "Windows_NT":
-    default:
-      file = `VenafiCodeSigningClients-${version}-x64.zip`;
-      break;
+  const debDistrolist = ['ubuntu', 'debian'];
+  const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
+  if (currentOs == 'Linux' && debDistrolist.includes(currentDistro) && architecture == 'intel') {
+    file = `venafi-csc-latest-x86_64.deb`;
   }
-
-  return util.format("%s/%s", baseURL, file);
+  else if (currentOs == 'Linux' && debDistrolist.includes(currentDistro) && architecture == 'arm') {
+    file = `venafi-csc-latest-aarch64.deb`;
+  }
+  else if (currentOs == 'Linux' && rhelDistrolist.includes(currentDistro) && architecture == 'intel') {
+    file = `venafi-csc-latest-x86_64.rpm`;
+  }
+  else if (currentOs == 'Linux' && rhelDistrolist.includes(currentDistro) && architecture == 'arm') {
+    file = `venafi-csc-latest-aarch64.rpm`;
+  }   
+  else if (currentOs == 'Windows_NT' && currentDistro == 'default' && architecture == 'intel') {
+    file = `venafi-csc-latest-x86_64.msi`;
+  }
+  else if (currentOs == 'Darwin' && currentDistro == 'default' && architecture == 'intel') {
+    file = `venafi-csc-latest-universal.dmg`;
+  }
+  else {
+    console.log('Unsupported operating system or distribution detected');
+  }
+  url = util.format("%s/%s", baseURL, file);
+  var savefile = file.replace('latest', version);
+  return {
+    url: url,
+    savefile: savefile
+  }
 }
 
-
 // Downloads and installs the package to the runner and returns the path.
-async function downloadCSPDriver(baseURL, currentOs, version) {
+async function downloadCSPDriver(baseURL, currentOs, currentDistro, version) {
   // See if we have cached this tool already
   let cachedToolPath = tc.find(toolName, version);
 
@@ -77,14 +97,14 @@ async function downloadCSPDriver(baseURL, currentOs, version) {
   // If we did not find the tool in the cache download it now.
   if (!cachedToolPath) {
     let downloadPath;
-    let downloadUrl = getCSPDriverDownloadURL(baseURL, currentOs, version);
+    var download = getCSPDriverDownloadURL(baseURL,currentOs,currentDistro, version);
     try {
-      core.info(`Downloading CSP Driver from ${downloadUrl}...`);
-      downloadPath = await tc.downloadTool(downloadUrl);
+      core.info(`Downloading CSP Driver from ${download.url}...`);
+      downloadPath = await tc.downloadTool(download.url, download.savefile);
       core.debug(`downloadTool: ${downloadPath}`);
     } catch (exception) {
       throw new Error(
-        util.format("Failed to download CSPDriver from location", downloadUrl),
+        util.format("Failed to download CSPDriver from location", download.url),
         core.error(`The following axception occured: ${exception}`)
       );
     }
@@ -205,7 +225,7 @@ function walkSync(dir, fileList, fileToFind) {
 async function run(currentOs, currentDistro, version) {
   core.info(`Identified '${currentDistro}' for ${currentOs}`);
   
-  let cachedPath = await downloadCSPDriver(baseURL, currentOs, version);
+  let cachedPath = await downloadCSPDriver(baseURL, currentOs, currentDistro, version);
 
   if (!process.env["PATH"].startsWith(path.dirname(cachedPath))) {
     core.addPath(path.dirname(cachedPath));
