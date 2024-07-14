@@ -19,6 +19,37 @@ const authURL = core.getInput('tpp-auth-url');
 
 const hsmURL = core.getInput('tpp-hsm-url');
 
+//
+async function checkCSPDriverSetup(currentOs, currentDistro, version) {
+  const debDistrolist = ['ubuntu', 'debian'];
+  const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
+  var packageInfo = "";
+  const options = {
+    listeners: {
+      stdout: (data) => { packageInfo += data.toString() }
+    }
+  }
+
+  if (currentOs == 'Linux' && debDistrolist.includes(currentDistro)) {
+    await exec.exec('sudo', ['apt', 'show', 'venaficodesign'], options );
+  }
+  else if (currentOs == 'Linux' && rhelDistrolist.includes(currentDistro)) {
+    await exec.exec('sudo', ['yum', 'info', 'venaficodesign'], options );
+  }
+  else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
+    // Requires some work
+  }
+  else if (currentOs == 'Darwin' && currentDistro == 'default') {
+    // Requires some work
+  }
+  else {
+    console.log('Unsupported operating system or distribution detected');
+  }
+  return packageInfo;
+}
+
+
+
 // Supported distro names are 'rhel','centos', 'rocky', 'ubuntu', 'amzn', 'fedora', 'debian' and 'ol'.
 async function installCSPDriverPackage(cachedToolPath, packageName, currentOs, currentDistro) {
   const debDistrolist = ['ubuntu', 'debian'];
@@ -123,6 +154,11 @@ function getCSPDriverDownloadInfo(baseURL, currentOs, currentDistro, version) {
 // Downloads and installs the package to the runner and returns the path.
 async function downloadCSPDriver(baseURL, currentOs, currentDistro, version) {
 
+  // Do we have the package installed and which version?
+  // Do we need to replace or skip
+  const packageInfo = checkCSPDriverSetup(currentOs, currentDistro, version);
+  core.debug(`PackageInfo: ${packageInfo}`)
+
   // Generate all information for the CSPDriver Download specification
   const download = getCSPDriverDownloadInfo(baseURL,currentOs,currentDistro, version);
 
@@ -178,17 +214,15 @@ async function downloadCSPDriver(baseURL, currentOs, currentDistro, version) {
 
   // (chmod a+rwx) sets permissions so that, User / owner can read, can
   // write and can execute. Group can read, can write and can execute.
-  // Others can read, can write and can execute.
-  fs.chmodSync(toolPath, "777");
+  // Others can read and can execute.
+  fs.chmodSync(toolPath, "775");
 
   return toolPath;
 }
 
 // Returns a install path of the desired tool
-function findTool(currentOs, rootFolder, packageName) {
-  core.info(`findTool started for ${rootFolder}`);
-  fs.chmodSync(rootFolder, "777");
-  core.info(`Chmod stopped`);
+function findTool(rootFolder, packageName) {
+  core.info(`Discovery started for ${packageName} ${rootFolder}`);
   // Holds all the paths. The tool might be installed in multiple locations.
   var fileList;
 
@@ -209,23 +243,6 @@ function findTool(currentOs, rootFolder, packageName) {
     core.info(`Following found ${fileList}`);
     return fileList[0];
   }
-}
-
-// Returns the full name of the executable with extension if any. On Linux and
-// macOS the executable does not have an extension but on Windows it does.
-function getExecutableName(currentOs) {
-  var executableName = "";
-  switch (currentOs) {
-    case "Linux":
-      executableName = `pkcs11config`;
-      break;
-
-    case "Windows_NT":
-    default:
-      executableName = `cspconfig.exe`;
-      break;
-  }
-  return executableName;
 }
 
 // Returns a list of path to the fileToFind in the dir provided.
