@@ -24,7 +24,7 @@ describe("run", () => {
     jest.spyOn(fs, "rmdirSync").mockReturnValue();
 
     // Act
-    await action.run("Linux", "24.1.0");
+    await action.run("Linux", "ubuntu", "24.1.0");
 
     // Restore mocks so the testing framework can use the fs functions
     jest.restoreAllMocks();
@@ -37,21 +37,21 @@ describe("run", () => {
 describe("getCSPDriverDownloadURL", () => {
   test("should download the Windows version", () => {
     // Act
-    let url = action.getCSPDriverDownloadURL("https://localhost/csc/clients", "Windows_NT", "24.1.0");
+    let url = action.getCSPDriverDownloadURL("https://localhost/csc/clients", "Windows_NT", "default", "24.1.0");
 
     // Assert
     expect(url).toEqual(
-      "https://localhost/csc/clients/VenafiCodeSigningClients-24.1.0-x64.zip"
+      "https://localhost/csc/clients/venafi-csc-latest-x86_64.msi"
     );
   });
 
   test("should download the Linux version", () => {
     // Act
-    let url = action.getCSPDriverDownloadURL("https://localhost/csc/clients","Linux", "24.1.0");
+    let url = action.getCSPDriverDownloadURL("https://localhost/csc/clients","Linux", "ubuntu", "24.1.0");
 
     // Assert
     expect(url).toEqual(
-      "https://localhost/csc/clients/venafi-codesigningclients-24.1.0-linux-x86_64.tar.gz"
+      "https://localhost/csc/clients/venafi-csc-latest-x86_64.deb"
     );
   });
 
@@ -73,7 +73,7 @@ describe("download CSPDriver", () => {
     });
 
     // Act
-    let actual = await action.downloadCSPDriver("https://localhost/csc/clients", "Linux", "24.1.0");
+    let actual = await action.downloadCSPDriver("https://localhost/csc/clients", "Linux", "ubuntu", "24.1.0");
 
     // Assert
     // Restore mocks so the testing framework can use the fs functions
@@ -114,7 +114,7 @@ describe("download CSPDriver", () => {
 
     try {
       // Act
-      await action.downloadCSPDriver("https://localhost/csc/clients", "Linux", "24.1.0");
+      await action.downloadCSPDriver("https://localhost/csc/clients", "Linux", "ubuntu", "24.1.0");
     } catch (error) {
       // Restore mocks so the testing framework can use the fs functions
       jest.restoreAllMocks();
@@ -142,7 +142,7 @@ describe("download CSPDriver", () => {
 
     try {
       // Act
-      await action.downloadCSPDriver("https://localhost/csc/clients","Linux", "24.1.0");
+      await action.downloadCSPDriver("https://localhost/csc/clients","Linux", "ubuntu", "24.1.0");
     } catch (error) {
       // Restore mocks so the testing framework can use the fs functions
       jest.restoreAllMocks();
@@ -151,7 +151,7 @@ describe("download CSPDriver", () => {
       expect(error).toBeInstanceOf(Error);
       expect(error).toHaveProperty(
         "message",
-        "Failed to download CSPDriver from location https://localhost/csc/clients/venafi-codesigningclients-24.1.0-linux-x86_64.tar.gz"
+        "Failed to download CSPDriver from location https://localhost/csc/clients/venafi-csc-latest-x86_64.deb"
       );
     }
   });
