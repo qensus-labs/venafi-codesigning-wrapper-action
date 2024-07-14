@@ -20,9 +20,10 @@ const authURL = core.getInput('tpp-auth-url');
 const hsmURL = core.getInput('tpp-hsm-url');
 
 // Supported distro names are 'rhel','centos', 'rocky', 'ubuntu', 'amzn', 'fedora', 'debian' and 'ol'.
-async function installCSPDriverPackage(cachedToolPath, packageName, currentOs, currentDistro, version) {
+async function installCSPDriverPackage(cachedToolPath, packageName, currentOs, currentDistro) {
   const debDistrolist = ['ubuntu', 'debian'];
   const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
+  var packageInstaller;
   var result = "";
   const options = {
     listeners: {
@@ -31,25 +32,25 @@ async function installCSPDriverPackage(cachedToolPath, packageName, currentOs, c
   }
 
   if (currentOs == 'Linux' && debDistrolist.includes(currentDistro)) {
-    var packageInstaller = 'dpkg'
-    await exec.exec('sudo', [packageInstaller, '-i', packageName ] );
+    packageInstaller = 'dpkg'
+    await exec.exec('sudo', [packageInstaller, '-i', packageName, options ] );
   }
   else if (currentOs == 'Linux' && rhelDistrolist.includes(currentDistro)) {
-    var packageInstaller = 'rpm'
-    await exec.exec('sudo', [packageInstaller, '-Uvh', packageName ] );
+    packageInstaller = 'rpm'
+    await exec.exec('sudo', [packageInstaller, '-Uvh', packageName, options ] );
   }
   else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
     // start /wait msiexec /qn /i "VenafiCodeSigningClients-24.1.0-x64.msi"
-    var packageInstaller = 'msiexec'
-    await exec.exec('start', ['/wait', packageInstaller, '/qn', '/i' packageName ] );
+    packageInstaller = 'msiexec'
+    await exec.exec('start', ['/wait', packageInstaller, '/qn', '/i', packageName, options ] );
   }
   else if (currentOs == 'Darwin' && currentDistro == 'default') {
     // mkdir -p installer
     // sudo hdiutil attach "Venafi CodeSign Protect Clients v24.1.0-universal.dmg" -noautoopen -mountpoint installer/
     // sudo installer -pkg "installer/Venafi CodeSign Protect Clients.pkg/" -target /
     // sudo hdiutil detach installer
-    var packageInstaller = 'installer'
-    await exec.exec('sudo', [packageInstaller, '-pkg', '"installer/Venafi CodeSign Protect Clients.pkg/"', '-target', '/' ] );
+    packageInstaller = 'installer'
+    await exec.exec('sudo', [packageInstaller, '-pkg', '"installer/Venafi CodeSign Protect Clients.pkg/"', '-target', '/', options ] );
   }
   else {
     console.log('Unsupported operating system or distribution detected');
@@ -151,7 +152,8 @@ async function downloadCSPDriver(baseURL, currentOs, currentDistro, version) {
   }
   
   // Now that we have the install package let's installl this for the currentOs + distribution
-  setupPackage = await installCSPDriverPackage(cachedToolPath, download.savefile, currentOs, currentDistro, version);
+  var setupPackage = await installCSPDriverPackage(cachedToolPath, download.savefile, currentOs, currentDistro);
+  core.debug(`Installation results: ${setupPackage}`);
 
   // Get the full path to the executable
   const toolPath = findTool(currentOs, cachedToolPath);
