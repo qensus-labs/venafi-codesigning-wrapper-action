@@ -5,6 +5,10 @@ branding:
   icon: 'package'
   color: 'blue'
 inputs:
+  architecture:
+    description: 'The running system  architecture, either "intel" or "arm" based'
+    required: false
+    default: 'intel'
   tpp-csc-url:
     description: 'CodeSign Protect Client Downloads page'
     required: false
