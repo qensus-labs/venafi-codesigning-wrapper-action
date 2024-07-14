@@ -39,16 +39,16 @@ async function installCSPDriverPackage(cachedToolPath, packageName, currentOs, c
 
   if (currentOs == 'Linux' && debDistrolist.includes(currentDistro)) {
     packageInstaller = 'dpkg'
-    await exec.exec('sudo', [packageInstaller, '-i', packageName, options ] );
+    await exec.exec('sudo', [packageInstaller, '-i', util.format("%s/%s",cachedToolPath, packageName), options ] );
   }
   else if (currentOs == 'Linux' && rhelDistrolist.includes(currentDistro)) {
     packageInstaller = 'rpm'
-    await exec.exec('sudo', [packageInstaller, '-Uvh', packageName, options ] );
+    await exec.exec('sudo', [packageInstaller, '-Uvh', util.format("%s/%s",cachedToolPath, packageName), options ] );
   }
   else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
     // start /wait msiexec /qn /i "VenafiCodeSigningClients-24.1.0-x64.msi"
     packageInstaller = 'msiexec'
-    await exec.exec('start', ['/wait', packageInstaller, '/qn', '/i', packageName, options ] );
+    await exec.exec('start', ['/wait', packageInstaller, '/qn', '/i', util.format("%s/%s",cachedToolPath, packageName), options ] );
   }
   else if (currentOs == 'Darwin' && currentDistro == 'default') {
     // mkdir -p installer
@@ -92,7 +92,7 @@ async function setCSPDriverDefaultConfig(currentOs, cachedPath, authURL, hsmURL)
 // Returns an object with the URL and savefile used to download a specific version of the CSP Driver (either PKCS11 for Linux or CSP for Windows) for a
 // specific operating system, distribution and architecture. 
 // Supported distro names are 'rhel','centos', 'rocky', 'ubuntu', 'amzn', 'fedora', 'debian' and 'ol'.
-function getCSPDriverDownloadURL(baseURL, currentOs, currentDistro, version) {
+function getCSPDriverDownloadInfo(baseURL, currentOs, currentDistro, version) {
   var url = "";
   var file = "";
   const debDistrolist = ['ubuntu', 'debian'];
@@ -128,15 +128,17 @@ function getCSPDriverDownloadURL(baseURL, currentOs, currentDistro, version) {
 
 // Downloads and installs the package to the runner and returns the path.
 async function downloadCSPDriver(baseURL, currentOs, currentDistro, version) {
+
+  // Generate all information for the CSPDriver Download specification
+  const download = getCSPDriverDownloadInfo(baseURL,currentOs,currentDistro, version);
+
   // See if we have cached this tool already
   let cachedToolPath = tc.find(toolName, version);
-
   core.debug(`find: ${cachedToolPath}`)
 
   // If we did not find the tool in the cache download it now.
   if (!cachedToolPath) {
     let downloadPath;
-    var download = getCSPDriverDownloadURL(baseURL,currentOs,currentDistro, version);
     try {
       core.info(`Downloading CSP Driver from ${download.url}...`);
       downloadPath = await tc.downloadTool(download.url, download.savefile);
@@ -154,6 +156,15 @@ async function downloadCSPDriver(baseURL, currentOs, currentDistro, version) {
 
     // Cache the downloaded installationfile to the tool-cache folder.
     cachedToolPath = await tc.cacheFile(downloadPath, download.savefile, toolName, version);
+    if (!cachedToolPath) {
+      throw new Error(
+        util.format("CSP Driver package cannot be cached", cachedToolPath)
+      );
+    }
+    else {
+      fs.rmSync(downloadPath);
+    }
+
     core.debug(`cacheDir: ${cachedToolPath}`);
   }
   
@@ -162,7 +173,7 @@ async function downloadCSPDriver(baseURL, currentOs, currentDistro, version) {
   core.debug(`Installation results: ${setupPackage}`);
 
   // Get the full path to the executable
-  const toolPath = findTool(currentOs, cachedToolPath);
+  const toolPath = findTool(currentOs, cachedToolPath, download.savefile);
   if (!toolPath) {
     throw new Error(
       util.format("CSP Driver package not found in path", cachedToolPath)
@@ -180,7 +191,7 @@ async function downloadCSPDriver(baseURL, currentOs, currentDistro, version) {
 }
 
 // Returns a install path of the desired tool
-function findTool(currentOs, rootFolder) {
+function findTool(currentOs, rootFolder, packageName) {
   core.info(`findTool started for ${rootFolder}`);
   fs.chmodSync(rootFolder, "777");
   core.info(`Chmod stopped`);
@@ -192,7 +203,7 @@ function findTool(currentOs, rootFolder) {
   fileList = walkSync(
     rootFolder,
     fileList,
-    getExecutableName(currentOs)
+    packageName
   );
 
   if (!fileList || fileList.length == 0) {
@@ -276,7 +287,7 @@ module.exports = {
   run: run,
   setCSPDriverDefaultConfig: setCSPDriverDefaultConfig,
   downloadCSPDriver: downloadCSPDriver,
-  getCSPDriverDownloadURL: getCSPDriverDownloadURL,
+  getCSPDriverDownloadInfo: getCSPDriverDownloadInfo,
 };
 
 /***/ }),
