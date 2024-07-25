@@ -74,13 +74,14 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
     const {stdout} = await exec.getExecOutput('sudo', ['apt', 'show', 'venaficodesign'], {
       silent: true
     });
+    const currentBase = stdout.trim().split('\n');
     console.log(Array.isArray(stdout));
     core.debug(`currentBase: ${stdout}`);
     // Initialize an empty object to store the expected install base
     const installBase = {};
 
     // Use forEach to add each element to the object
-    Array.from(stdout).forEach(item => {
+    currentBase.forEach(item => {
       const [key, ...valueParts] = item.toLowerCase().trim().split(':');
       const value = valueParts.join(':').trim();
       const baselineInfo = [ 'version', 'status'];
