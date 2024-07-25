@@ -26,7 +26,7 @@ async function uninstallCSPDriver(currentOs, currentDistro) {
   const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
 
   if (currentOs == 'Linux' && debDistrolist.includes(currentDistro)) {
-    {packageRemoval} = await exec.getExecOutput('sudo', ['apt', 'remove', 'venaficodesign', '-y' ], {
+    packageRemoval = await exec.getExecOutput('sudo', ['apt', 'remove', 'venaficodesign', '-y' ], {
       silent: true
     });
 
@@ -34,7 +34,7 @@ async function uninstallCSPDriver(currentOs, currentDistro) {
 
   }
   else if (currentOs == 'Linux' && rhelDistrolist.includes(currentDistro)) {
-    {packageRemoval} = await exec.getExecOutput('sudo', ['yum', 'remove', 'venaficodesign', '-y' ], {
+    packageRemoval = await exec.getExecOutput('sudo', ['yum', 'remove', 'venaficodesign', '-y' ], {
       silent: true
     });
 

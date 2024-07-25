@@ -25,22 +25,25 @@ const authURL = core.getInput('tpp-auth-url');
 
 const hsmURL = core.getInput('tpp-hsm-url');
 
-//
-async function checkCSPDriverSetup(currentOs, currentDistro, version) {
+
+async function uninstallCSPDriver(currentOs, currentDistro) {
+  let packageRemoval;
   const debDistrolist = ['ubuntu', 'debian'];
   const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
-  var packageInfo = "";
-  const options = {
-    listeners: {
-      stdout: (data) => { packageInfo += data.toString() }
-    }
-  }
 
   if (currentOs == 'Linux' && debDistrolist.includes(currentDistro)) {
-    await exec.exec('sudo', ['apt', 'show', 'venaficodesign'], options );
+    packageRemoval = await exec.getExecOutput('sudo', ['apt', 'remove', 'venaficodesign', '-y' ], {
+      silent: true
+    });
+
+   
+
   }
   else if (currentOs == 'Linux' && rhelDistrolist.includes(currentDistro)) {
-    await exec.exec('sudo', ['yum', 'info', 'venaficodesign'], options );
+    packageRemoval = await exec.getExecOutput('sudo', ['yum', 'remove', 'venaficodesign', '-y' ], {
+      silent: true
+    });
+
   }
   else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
     // Requires some work
@@ -51,10 +54,80 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
   else {
     console.log('Unsupported operating system or distribution detected');
   }
-  return packageInfo;
+
+  if (packageRemoval) {
+    core.debug(`removal: ${packageRemoval}`);
+  }
+
+  return packageRemoval;
 }
 
 
+
+// Function to check currentBase of the installation and if needed trigger a reinstall
+async function checkCSPDriverSetup(currentOs, currentDistro, version) {
+  let reinstall = "" ;
+  const debDistrolist = ['ubuntu', 'debian'];
+  const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
+
+  if (currentOs == 'Linux' && debDistrolist.includes(currentDistro)) {
+    const {currentBase} = await exec.getExecOutput('sudo', ['apt', 'show', 'venaficodesign'], {
+      silent: true
+    });
+
+    // Initialize an empty object to store the expected install base
+    const installBase = {};
+
+    // Use forEach to add each element to the object
+    currentBase.forEach(item => {
+      const [key, ...valueParts] = item.toLowerCase().trim().split(':');
+      const value = valueParts.join(':').trim();
+      const baselineInfo = [ 'version', 'status'];
+      if (baselineInfo.includes(key)) {
+        installBase[key] = value;
+      }   
+    });
+
+    reinstall = new Boolean(!installBase['version'].match(version));
+
+  }
+  else if (currentOs == 'Linux' && rhelDistrolist.includes(currentDistro)) {
+    const {currentBase} = await exec.getExecOutput('sudo', ['yum', 'info', 'venaficodesign'], {
+      silent: true
+    });
+
+    // Initialize an empty object to store the expected install base
+    const installBase = {};
+
+    // Use forEach to add each element to the object
+    currentBase.forEach(item => {
+      const [key, ...valueParts] = item.toLowerCase().trim().split(':');
+      const value = valueParts.join(':').trim();
+      const baselineInfo = [ 'version', 'status'];
+      if (baselineInfo.includes(key)) {
+        installBase[key] = value;
+      }   
+    });
+
+    reinstall = new Boolean(!installBase['version'].match(version));
+
+  }
+  else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
+    // Requires some work
+  }
+  else if (currentOs == 'Darwin' && currentDistro == 'default') {
+    // Requires some work
+  }
+  else {
+    console.log('Unsupported operating system or distribution detected');
+  }
+
+  if (reinstall) {
+    core.debug(`reinstall: ${reinstall}`);
+  }
+
+  return reinstall;
+}
 
 // Supported distro names are 'rhel','centos', 'rocky', 'ubuntu', 'amzn', 'fedora', 'debian' and 'ol'.
 async function installCSPDriverPackage(cachedToolPath, packageName, currentOs, currentDistro) {
@@ -162,9 +235,12 @@ async function downloadCSPDriver(baseURL, currentOs, currentDistro, version) {
 
   // Do we have the package installed and which version?
   // Do we need to replace or skip
-  const packageInfo = await checkCSPDriverSetup(currentOs, currentDistro, version);
-  core.debug(`PackageInfo: ${packageInfo}`);
-  console.log(packageInfo);
+  const reinstall = await checkCSPDriverSetup(currentOs, currentDistro, version);
+  core.debug(`reinstall: ${reinstall}`);
+  
+  if (reinstall) {
+    await uninstallCSPDriver(currentOs, currentDistro);
+  }
 
   // Generate all information for the CSPDriver Download specification
   const download = getCSPDriverDownloadInfo(baseURL,currentOs,currentDistro, version);
