@@ -106,6 +106,7 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
       const [key, ...valueParts] = item.toLowerCase().trim().split(':');
       const value = valueParts.join(':').trim();
       const baselineInfo = [ 'version', 'status'];
+      console.log(key + '-' + value );
       if (baselineInfo.includes(key)) {
         installBase[key] = value;
       }   
