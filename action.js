@@ -65,16 +65,16 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
   const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
 
   if (currentOs == 'Linux' && debDistrolist.includes(currentDistro)) {
-    const {currentBase} = await exec.getExecOutput('sudo', ['apt', 'show', 'venaficodesign'], {
+    const {stdout} = await exec.getExecOutput('sudo', ['apt', 'show', 'venaficodesign'], {
       silent: true
     });
     
-    core.debug(`currentBase: ${currentBase}`);
+    core.debug(`currentBase: ${stdout}`);
     // Initialize an empty object to store the expected install base
     const installBase = {};
 
     // Use forEach to add each element to the object
-    currentBase.forEach(item => {
+    stdout.forEach(item => {
       const [key, ...valueParts] = item.toLowerCase().trim().split(':');
       const value = valueParts.join(':').trim();
       const baselineInfo = [ 'version', 'status'];
@@ -87,7 +87,7 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
 
   }
   else if (currentOs == 'Linux' && rhelDistrolist.includes(currentDistro)) {
-    const {currentBase} = await exec.getExecOutput('sudo', ['yum', 'info', 'venaficodesign'], {
+    const {stdout} = await exec.getExecOutput('sudo', ['yum', 'info', 'venaficodesign'], {
       silent: true
     });
 
@@ -95,7 +95,7 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
     const installBase = {};
 
     // Use forEach to add each element to the object
-    currentBase.forEach(item => {
+    stdout.forEach(item => {
       const [key, ...valueParts] = item.toLowerCase().trim().split(':');
       const value = valueParts.join(':').trim();
       const baselineInfo = [ 'version', 'status'];
