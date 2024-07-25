@@ -83,7 +83,7 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
         installBase[key] = value;
       }   
     });
-
+    console.log()
     reinstall = new Boolean(!installBase['version'].match(version));
 
   }
@@ -104,7 +104,7 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
         installBase[key] = value;
       }   
     });
-
+    console.log(installBase);
     reinstall = new Boolean(!installBase['version'].match(version));
 
   }
