@@ -76,7 +76,6 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
     });
     
     core.debug(`currentBase: ${stdout}`);
-    console.log(stdout);
     // Initialize an empty object to store the expected install base
     const installBase = {};
 
@@ -85,11 +84,12 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
       const [key, ...valueParts] = item.toLowerCase().trim().split(':');
       const value = valueParts.join(':').trim();
       const baselineInfo = [ 'version', 'status'];
+      console.log(key + '-' + value );
       if (baselineInfo.includes(key)) {
         installBase[key] = value;
       }   
     });
-    console.log()
+    console.log(installBase);
     reinstall = new Boolean(!installBase['version'].match(version));
 
   }
