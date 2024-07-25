@@ -75,7 +75,7 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
     const installBase = {};
 
     // Use forEach to add each element to the object
-    stdout.forEach(item => {
+    Array.from(stdout).forEach(item => {
       const [key, ...valueParts] = item.toLowerCase().trim().split(':');
       const value = valueParts.join(':').trim();
       const baselineInfo = [ 'version', 'status'];
