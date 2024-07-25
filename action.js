@@ -70,6 +70,7 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
     });
     
     core.debug(`currentBase: ${stdout}`);
+    console.log(stdout);
     // Initialize an empty object to store the expected install base
     const installBase = {};
 
