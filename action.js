@@ -313,6 +313,7 @@ async function downloadCSPDriver(baseURL, currentOs, currentDistro, version) {
   }
   // Get the full path to the executable
   const toolPath = findTool(cachedToolPath, download.savefile);
+  core.debug(`toolPath: ${toolPath}`);
   if (!toolPath) {
     throw new Error(
       util.format("CSP Driver package not found in path", cachedToolPath)
