@@ -60,7 +60,7 @@ async function uninstallCSPDriver(currentOs, currentDistro) {
 
 // Function to check currentBase of the installation and if needed trigger a reinstall
 async function checkCSPDriverSetup(currentOs, currentDistro, version) {
-  let reinstall = "" ;
+  let reinstall = true ;
   const debDistrolist = ['ubuntu', 'debian'];
   const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
 
@@ -88,14 +88,14 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
         }   
       });
       console.log(installBase);
-      reinstall = new Boolean(!installBase['version'].match(version));
+      if (installBase['version'].match(version)) {
+        reinstall = false;
+      }
     }
     else {
       core.info(`Venafi CSP Driver installation has not been detected`);
-      reinstall = new Boolean(true);
     }
     
-
   }
   else if (currentOs == 'Linux' && rhelDistrolist.includes(currentDistro)) {
     const {stdout} = await exec.getExecOutput('sudo', ['yum', 'info', 'venaficodesign'], {
@@ -116,7 +116,9 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
       }   
     });
     console.log(installBase);
-    reinstall = new Boolean(!installBase['version'].match(version));
+    if (!installBase['version'].match(version)) {
+      reinstall = false;
+    }
 
   }
   else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
