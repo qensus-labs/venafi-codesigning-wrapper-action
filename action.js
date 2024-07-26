@@ -124,7 +124,20 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
 
   }
   else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
-    // Requires some work
+    const {exitCode, stdout} = await exec.getExecOutput(
+      'powershell -command "(Get-ChildItem -Path HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\ | Get-ItemProperty | Select-Object DisplayName, DisplayVersion |  Where-Object {($_.DisplayName -like "*Venafi*Code*Signing*")} | Format-List)"',
+      undefined,
+      {
+      silent: true,
+      ignoreReturnCode: true
+      }
+    );
+    core.debug(`ExitCode: ${exitCode}`);
+    if (exitCode == 0) {
+      const currentBase = stdout.trim().split('\n');
+      core.debug(`currentBase: ${stdout}`);
+    }
+    
   }
   else if (currentOs == 'Darwin' && currentDistro == 'default') {
     // Requires some work
