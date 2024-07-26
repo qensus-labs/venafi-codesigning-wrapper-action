@@ -71,27 +71,36 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
   const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
 
   if (currentOs == 'Linux' && debDistrolist.includes(currentDistro)) {
-    const {stdout} = await exec.getExecOutput('sudo', ['apt', 'show', 'venaficodesign'], {
-      silent: true
+    const {exitCode, stdout} = await exec.getExecOutput('sudo', ['apt', 'show', 'venaficodesign'], {
+      silent: true,
+      ignoreReturnCode: true
     });
-    const currentBase = stdout.trim().split('\n');
-    console.log(Array.isArray(stdout));
-    core.debug(`currentBase: ${stdout}`);
-    // Initialize an empty object to store the expected install base
-    const installBase = {};
+    
+    if (exitCode) {
+      const currentBase = stdout.trim().split('\n');
+      console.log(Array.isArray(stdout));
+     core.debug(`currentBase: ${stdout}`);
+      // Initialize an empty object to store the expected install base
+     const installBase = {};
 
-    // Use forEach to add each element to the object
-    currentBase.forEach(item => {
-      const [key, ...valueParts] = item.toLowerCase().trim().split(':');
-      const value = valueParts.join(':').trim();
-      const baselineInfo = [ 'version', 'status'];
-      console.log(key + '-' + value );
-      if (baselineInfo.includes(key)) {
-        installBase[key] = value;
-      }   
-    });
-    console.log(installBase);
-    reinstall = new Boolean(!installBase['version'].match(version));
+      // Use forEach to add each element to the object
+      currentBase.forEach(item => {
+        const [key, ...valueParts] = item.toLowerCase().trim().split(':');
+        const value = valueParts.join(':').trim();
+        const baselineInfo = [ 'version', 'status'];
+        console.log(key + '-' + value );
+        if (baselineInfo.includes(key)) {
+          installBase[key] = value;
+        }   
+      });
+      console.log(installBase);
+      reinstall = new Boolean(!installBase['version'].match(version));
+    }
+    else {
+      core.info(`Venafi CSP Driver installation has not been detected`);
+      reinstall = new Boolean(true);
+    }
+    
 
   }
   else if (currentOs == 'Linux' && rhelDistrolist.includes(currentDistro)) {
