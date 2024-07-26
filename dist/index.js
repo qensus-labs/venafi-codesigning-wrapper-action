@@ -131,8 +131,8 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
   }
   else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
     const {exitCode, stdout} = await exec.getExecOutput('powershell', [
-      "-command",
-      `Get-ChildItem -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\ | Get-ItemProperty | Select-Object DisplayName, DisplayVersion |  Where-Object {($_.DisplayName -like "*Venafi*Code*Signing*")} | Format-List`
+      "-Command",
+      `"Get-ChildItem -Path HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\ | Get-ItemProperty | Select-Object DisplayName, DisplayVersion |  Where-Object {($_.DisplayName -like \\"*Venafi*Code*Signing*\\")} | Format-List"`
     ],
       {
       silent: true,
@@ -183,7 +183,7 @@ async function installCSPDriverPackage(cachedToolPath, packageName, currentOs, c
   else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
     // start /wait msiexec /qn /i "VenafiCodeSigningClients-24.1.0-x64.msi"
     packageInstaller = 'msiexec'
-    await exec.exec('start', ['/wait', packageInstaller, '/qn', '/i', util.format("%s/%s",cachedToolPath, packageName) ], options );
+    await exec.exec('powershell', ['Start-Process', packageInstaller, '/qn', '/i', util.format("%s/%s",cachedToolPath, packageName), '-Wait' ], options );
   }
   else if (currentOs == 'Darwin' && currentDistro == 'default') {
     // mkdir -p installer
