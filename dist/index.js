@@ -289,9 +289,10 @@ async function downloadCSPDriver(baseURL, currentOs, currentDistro, version) {
   }
   
   // Now that we have the install package let's installl this for the currentOs + distribution
-  var setupPackage = await installCSPDriverPackage(cachedToolPath, download.savefile, currentOs, currentDistro);
-  core.debug(`Installation results: ${setupPackage}`);
-
+  if (reinstall) {
+    var setupPackage = await installCSPDriverPackage(cachedToolPath, download.savefile, currentOs, currentDistro);
+    core.debug(`Installation results: ${setupPackage}`);
+  }
   // Get the full path to the executable
   const toolPath = findTool(cachedToolPath, download.savefile);
   if (!toolPath) {

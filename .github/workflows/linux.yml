@@ -23,7 +23,7 @@ jobs:
       - name: Check CSPDriver (version)
         run: |
           pkcs11config --version
-          pkcs11config trace --file=tracing.out --output=stdout
+        # pkcs11config trace --file=tracing.out --output=stdout
       - name: Setup Java SDK
         uses: actions/setup-java@v4
         with:
