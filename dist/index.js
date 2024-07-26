@@ -130,9 +130,10 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
 
   }
   else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
-    const {exitCode, stdout} = await exec.getExecOutput(
-      'powershell -command "(Get-ChildItem -Path HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\ | Get-ItemProperty | Select-Object DisplayName, DisplayVersion |  Where-Object {($_.DisplayName -like "*Venafi*Code*Signing*")} | Format-List)"',
-      undefined,
+    const {exitCode, stdout} = await exec.getExecOutput('powershell', [
+      "-command",
+      `Get-ChildItem -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\ | Get-ItemProperty | Select-Object DisplayName, DisplayVersion |  Where-Object {($_.DisplayName -like "*Venafi*Code*Signing*")} | Format-List`
+    ],
       {
       silent: true,
       ignoreReturnCode: true
