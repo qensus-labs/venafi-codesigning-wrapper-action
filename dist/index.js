@@ -69,7 +69,6 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
   const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
   const semver = extractSemver(version);
   let localSemver = "";
-  let localVersion = "";
   let reinstall = true ;
 
   if (currentOs == 'Linux' && debDistrolist.includes(currentDistro)) {
@@ -7159,7 +7158,7 @@ function getLinuxDistro(currentOs) {
     const lines = data.toString().split('\n');
     const idLine = lines.find(line => line.startsWith('ID='));
     if (idLine) {
-          distro = idLine.split('=')[1];
+      distro = idLine.split('=')[1].replace(/^"(.*)"$/, '$1');
     }
   }
   else {

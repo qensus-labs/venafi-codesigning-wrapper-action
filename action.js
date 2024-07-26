@@ -63,7 +63,6 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
   const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
   const semver = extractSemver(version);
   let localSemver = "";
-  let localVersion = "";
   let reinstall = true ;
 
   if (currentOs == 'Linux' && debDistrolist.includes(currentDistro)) {
