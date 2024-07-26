@@ -69,8 +69,8 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
       silent: true,
       ignoreReturnCode: true
     });
-    
-    if (exitCode) {
+    core.debug(`ExitCode: ${exitCode}`);
+    if (exitCode == 0) {
       const currentBase = stdout.trim().split('\n');
       console.log(Array.isArray(stdout));
      core.debug(`currentBase: ${stdout}`);
