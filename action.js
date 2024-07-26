@@ -21,23 +21,23 @@ const hsmURL = core.getInput('tpp-hsm-url');
 
 
 async function uninstallCSPDriver(currentOs, currentDistro) {
-  let packageRemoval;
+  //let uninstall = "";
   const debDistrolist = ['ubuntu', 'debian'];
   const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
 
   if (currentOs == 'Linux' && debDistrolist.includes(currentDistro)) {
-    packageRemoval = await exec.getExecOutput('sudo', ['apt', 'remove', 'venaficodesign', '-y' ], {
-      silent: true
+    const {exitCode, stdout}  = await exec.getExecOutput('sudo', ['apt', 'remove', 'venaficodesign', '-y' ], {
+      silent: true,
+      ignoreReturnCode: true
     });
-
-   
-
+    core.debug(`removal: exitcode[${exitCode}] with stdout: ${stdout} }`);
   }
   else if (currentOs == 'Linux' && rhelDistrolist.includes(currentDistro)) {
-    packageRemoval = await exec.getExecOutput('sudo', ['yum', 'remove', 'venaficodesign', '-y' ], {
-      silent: true
+    const {exitCode, stdout}  = await exec.getExecOutput('sudo', ['yum', 'remove', 'venaficodesign', '-y' ], {
+      silent: true,
+      ignoreReturnCode: true
     });
-
+    core.debug(`removal: exitcode[${exitCode}] with stdout: ${stdout} }`);
   }
   else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
     // Requires some work
@@ -48,12 +48,6 @@ async function uninstallCSPDriver(currentOs, currentDistro) {
   else {
     console.log('Unsupported operating system or distribution detected');
   }
-
-  if (packageRemoval) {
-    core.debug(`removal: ${packageRemoval}`);
-  }
-
-  return packageRemoval;
 }
 
 
