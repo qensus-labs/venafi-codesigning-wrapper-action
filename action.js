@@ -95,26 +95,31 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
     
   }
   else if (currentOs == 'Linux' && rhelDistrolist.includes(currentDistro)) {
-    const {stdout} = await exec.getExecOutput('sudo', ['yum', 'info', 'venaficodesign'], {
-      silent: true
+    const {exitCode, stdout} = await exec.getExecOutput('sudo', ['yum', 'info', 'venaficodesign'], {
+      silent: true,
+      ignoreReturnCode: true
     });
+    core.debug(`ExitCode: ${exitCode}`);
+    if (exitCode == 0) {
+      const currentBase = stdout.trim().split('\n');
+      core.debug(`currentBase: ${stdout}`);
 
-    // Initialize an empty object to store the expected install base
-    const installBase = {};
-
-    // Use forEach to add each element to the object
-    stdout.forEach(item => {
-      const [key, ...valueParts] = item.toLowerCase().trim().split(':');
-      const value = valueParts.join(':').trim();
-      const baselineInfo = [ 'version', 'status'];
-      console.log(key + '-' + value );
-      if (baselineInfo.includes(key)) {
-        installBase[key] = value;
-      }   
-    });
-    console.log(installBase);
-    if (!installBase['version'].match(version)) {
-      reinstall = false;
+      // Use forEach to add each element to the object
+      currentBase.forEach(item => {
+        const [key, ...valueParts] = item.toLowerCase().trim().split(':');
+        const value = valueParts.join(':').trim();
+        if (key == 'version') {
+          core.info(`Detected CSP Driver installation version ${value}`);
+          localSemver = extractSemver(value);
+        }   
+      });
+      if (localSemver.match(semver)) {
+        core.info(`Matched CSP Driver semantic version ${localSemver}`);
+        reinstall = false;
+      }
+    }
+    else {
+      core.info(`Detected no CSP Driver installation`);
     }
 
   }
