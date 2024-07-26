@@ -23,6 +23,7 @@ function extractSemver(version) {
   var [major, minor] = version.split('.');
   var semver = major + "." + minor;
   return semver;
+}
 
 async function uninstallCSPDriver(currentOs, currentDistro) {
   //let uninstall = "";

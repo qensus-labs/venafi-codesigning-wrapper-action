@@ -25,6 +25,11 @@ const authURL = core.getInput('tpp-auth-url');
 
 const hsmURL = core.getInput('tpp-hsm-url');
 
+function extractSemver(version) {
+  var [major, minor] = version.split('.');
+  var semver = major + "." + minor;
+  return semver;
+}
 
 async function uninstallCSPDriver(currentOs, currentDistro) {
   //let uninstall = "";
@@ -60,9 +65,12 @@ async function uninstallCSPDriver(currentOs, currentDistro) {
 
 // Function to check currentBase of the installation and if needed trigger a reinstall
 async function checkCSPDriverSetup(currentOs, currentDistro, version) {
-  let reinstall = true ;
   const debDistrolist = ['ubuntu', 'debian'];
   const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
+  const semver = extractSemver(version);
+  let localSemver = "";
+  let localVersion = "";
+  let reinstall = true ;
 
   if (currentOs == 'Linux' && debDistrolist.includes(currentDistro)) {
     const {exitCode, stdout} = await exec.getExecOutput('sudo', ['apt', 'show', 'venaficodesign'], {
@@ -72,28 +80,24 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
     core.debug(`ExitCode: ${exitCode}`);
     if (exitCode == 0) {
       const currentBase = stdout.trim().split('\n');
-      console.log(Array.isArray(stdout));
-     core.debug(`currentBase: ${stdout}`);
-      // Initialize an empty object to store the expected install base
-     const installBase = {};
+      core.debug(`currentBase: ${stdout}`);
 
       // Use forEach to add each element to the object
       currentBase.forEach(item => {
         const [key, ...valueParts] = item.toLowerCase().trim().split(':');
         const value = valueParts.join(':').trim();
-        const baselineInfo = [ 'version', 'status'];
-        console.log(key + '-' + value );
-        if (baselineInfo.includes(key)) {
-          installBase[key] = value;
+        if (key == 'version') {
+          core.info(`Detected CSP Driver installation version ${value}`);
+          localSemver = extractSemver(value);
         }   
       });
-      console.log(installBase);
-      if (installBase['version'].match(version)) {
+      if (localSemver.match(semver)) {
+        core.info(`Matched CSP Driver semantic version ${localSemver}`);
         reinstall = false;
       }
     }
     else {
-      core.info(`Venafi CSP Driver installation has not been detected`);
+      core.info(`Detected no CSP Driver installation`);
     }
     
   }
