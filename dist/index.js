@@ -183,7 +183,7 @@ async function installCSPDriverPackage(cachedToolPath, packageName, currentOs, c
   else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
     // start /wait msiexec /qn /i "VenafiCodeSigningClients-24.1.0-x64.msi"
     packageInstaller = 'msiexec'
-    await exec.exec('powershell', ['Start-Process', packageInstaller, '/qn', '/i', util.format("%s\%s",cachedToolPath, packageName), '-Wait' ], options );
+    await exec.exec('powershell', ['Start-Process', '-FilePath', packageInstaller,'-ArgumentList',"'/qn", '/i', util.format("%s\\%s'",cachedToolPath, packageName), '-Wait' ], options );
   }
   else if (currentOs == 'Darwin' && currentDistro == 'default') {
     // mkdir -p installer
