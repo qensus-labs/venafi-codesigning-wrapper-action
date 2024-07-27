@@ -194,7 +194,7 @@ async function installCSPDriverPackage(cachedToolPath, packageName, currentOs, c
   else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
     // start /wait msiexec /qn /i "VenafiCodeSigningClients-24.1.0-x64.msi"
     packageInstaller = 'msiexec'
-    await exec.exec('powershell', ['-File',  util.format("%s\\%s'",cachedToolPath, packageName) ], options );
+    await exec.exec('powershell', ['-File',  util.format("'%s\\%s'",cachedToolPath, packageName) ], options );
     // await exec.exec('powershell', ['Start-Process', '-FilePath', packageInstaller,'-ArgumentList',"'/qn", '/i', util.format("%s\\%s'",cachedToolPath, packageName), '-Wait' ], options );
   }
   else if (currentOs == 'Darwin' && currentDistro == 'default') {
@@ -331,7 +331,7 @@ async function downloadCSPDriver(baseURL, currentOs, currentDistro, version) {
 
     if (currentOs == 'Windows_NT') {
       core.info(`setupfile creation started`);
-      var package = util.format("%s\\%s'",cachedToolPath, download.savefile);
+      var package = util.format("%s\\%s",cachedToolPath, download.savefile);
       core.info(`show package: ${package}`);
       const content = `
       Start-Process -FilePath msiexec -ArgumentList '/qn /i ${package}' -Wait
