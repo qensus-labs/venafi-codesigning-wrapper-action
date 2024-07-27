@@ -25,6 +25,17 @@ const authURL = core.getInput('tpp-auth-url');
 
 const hsmURL = core.getInput('tpp-hsm-url');
 
+async function createWinSetupFile(filePath, content) {
+  try {
+    fs.writeFileSync(filePath, content);
+  } catch (exception) {
+    throw new Error(
+      util.format("Failed to write contents to", filePath),
+      core.error(`The following exception occured: ${exception}`)
+    );
+  }
+}
+
 function extractSemver(version) {
   var [major, minor] = version.split('.');
   var semver = major + "." + minor;
@@ -183,7 +194,8 @@ async function installCSPDriverPackage(cachedToolPath, packageName, currentOs, c
   else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
     // start /wait msiexec /qn /i "VenafiCodeSigningClients-24.1.0-x64.msi"
     packageInstaller = 'msiexec'
-    await exec.exec('powershell', ['Start-Process', '-FilePath', packageInstaller,'-ArgumentList',"'/qn", '/i', util.format("%s\\%s'",cachedToolPath, packageName), '-Wait' ], options );
+    await exec.exec('powershell', ['-File',  util.format("%s\\%s'",cachedToolPath, packageName) ], options );
+    // await exec.exec('powershell', ['Start-Process', '-FilePath', packageInstaller,'-ArgumentList',"'/qn", '/i', util.format("%s\\%s'",cachedToolPath, packageName), '-Wait' ], options );
   }
   else if (currentOs == 'Darwin' && currentDistro == 'default') {
     // mkdir -p installer
@@ -255,9 +267,16 @@ function getCSPDriverDownloadInfo(baseURL, currentOs, currentDistro, version) {
   }
   url = util.format("%s/%s", baseURL, file);
   var savefile = file.replace('latest', version);
+  var setupfile = file.replace('latest', version);
+
+  if (currentOs == 'Windows_NT') {
+     setupfile = setupfile.replace('.msi', '.ps1');
+  }
+
   return {
     url: url,
-    savefile: savefile
+    savefile: savefile,
+    setupfile:setupfile
   }
 }
 
@@ -293,6 +312,7 @@ async function downloadCSPDriver(baseURL, currentOs, currentDistro, version) {
         core.error(`The following axception occured: ${exception}`)
       );
     }
+    
     // (chmod a+rwx) sets permissions so that, User / owner can read, can
     // write and can execute. Group can read, can write and can execute.
     // Others can read, can write and can execute.
@@ -309,16 +329,24 @@ async function downloadCSPDriver(baseURL, currentOs, currentDistro, version) {
       fs.rmSync(downloadPath);
     }
 
+    if (currentOs == 'Windows_NT') {
+      var package = util.format("%s\\%s'",cachedToolPath, download.savefile);
+      const content = ```
+      Start-Process -FilePath msiexec -ArgumentList '/qn /i ${package}' -Wait
+      ```
+      createWinSetupFile(util.format("%s/%s",cachedToolPath, download.setupfile), content);
+    }
+
     core.debug(`cacheDir: ${cachedToolPath}`);
   }
   
   // Now that we have the install package let's installl this for the currentOs + distribution
   if (reinstall) {
-    var setupPackage = await installCSPDriverPackage(cachedToolPath, download.savefile, currentOs, currentDistro);
+    var setupPackage = await installCSPDriverPackage(cachedToolPath, download.setupfile, currentOs, currentDistro);
     core.debug(`Installation results: ${setupPackage}`);
   }
-  // Get the full path to the executable
-  const toolPath = findTool(cachedToolPath, download.savefile);
+
+  const toolPath = findTool(cachedToolPath, download.setupfile);
   core.debug(`toolPath: ${toolPath}`);
   if (!toolPath) {
     throw new Error(
