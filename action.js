@@ -5,6 +5,9 @@ const core = require("@actions/core");
 const tc = require("@actions/tool-cache");
 const exec = require("@actions/exec");
 
+// Variable from Github to asign.
+const tempDir = process.env['RUNNER_TEMP'];
+
 // The name of the tool we are installing with this action, which is 'Venafi Code Sign Protect'
 const toolName = "Venafi_CSP";
 
@@ -135,9 +138,14 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
 
   }
   else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
+    const content = `
+    Get-ChildItem -Path HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\ | Get-ItemProperty | Select-Object DisplayName, DisplayVersion, UninstallString |  Where-Object {($_.DisplayName -like "*Venafi*Code*Signing*")} | Format-List
+    `
+    core.debug(`content: ${content}`);
+    createWinSetupFile(util.format('%s\\%s',tempDir, 'venafi-csp-check-install.ps1'), content);
     const {exitCode, stdout} = await exec.getExecOutput('powershell', [
-      "-Command",
-      `"Get-ChildItem -Path HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\ | Get-ItemProperty | Select-Object DisplayName, DisplayVersion |  Where-Object {($_.DisplayName -like \\"*Venafi*Code*Signing*\\")} | Format-List"`
+      "-File",
+      `${tempDir}\venafi-csp-check-install.ps1`
     ],
       {
       silent: true,
