@@ -324,11 +324,12 @@ async function downloadCSPDriver(baseURL, currentOs, currentDistro, version) {
     }
 
     if (currentOs == 'Windows_NT') {
-      core.info(`setupfile creation started`)
+      core.info(`setupfile creation started`);
       var package = util.format("%s\\%s'",cachedToolPath, download.savefile);
       const content = ```
       Start-Process -FilePath msiexec -ArgumentList '/qn /i ${package}' -Wait
       ```
+      core.info(`show content: ${content}`);
       createWinSetupFile(util.format("%s/%s",cachedToolPath, download.setupfile), content);
     }
 
