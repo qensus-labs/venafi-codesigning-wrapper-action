@@ -8,18 +8,28 @@ This function we determine the applicable distribution of the Linux operating sy
 */
 function getLinuxDistro(currentOs) {
   if (currentOs == 'Linux') {
-    var distro; 
+    const debDistrolist = ['ubuntu', 'debian'];
+    const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
+    var distro;
+    var family;
     const data = fs.readFileSync('/etc/os-release', 'utf8');
     const lines = data.toString().split('\n');
     const idLine = lines.find(line => line.startsWith('ID='));
     if (idLine) {
       distro = idLine.split('=')[1].replace(/^"(.*)"$/, '$1');
+      if (debDistrolist.includes(distro)) {
+        family = 'debian';
+      }
+      else if (rhelDistrolist.includes(distro)) {
+        family = 'rhel';
+      }
     }
   }
   else {
     distro = 'default';
+    family = 'unknown';
   }
-    return distro;
+    return {distro, family};
 }
 
 /*
@@ -43,11 +53,11 @@ async function run() {
     // determine current operating system used by github runner
     const currentOs = os.type();
 
-    // determine current distro of the Linux operating system used by the github runner
-    const currentDistro = getLinuxDistro(currentOs);
+    // determine current distro and family of the Linux operating system used by the github runner
+    const { currentDistro, currentFamily } = getLinuxDistro(currentOs);
 
     // run the action code
-    await action.run(currentOs, currentDistro, version);
+    await action.run(currentOs, currentDistro, currentFamily, version);
 
     core.info(new Date().toTimeString());
   } catch (error) {

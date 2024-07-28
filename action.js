@@ -39,6 +39,17 @@ function extractSemver(version) {
   return semver;
 }
 
+function getOsFamily(currentDistro) {
+  const debDistrolist = ['ubuntu', 'debian'];
+  const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
+  if (debDistrolist.includes(currentDistro)) {
+    return 'debian';
+  }
+  else if (rhelDistrolist.includes(currentDistro)) {
+    return 'rhel';
+  }
+}
+
 async function uninstallCSPDriver(currentOs, currentDistro, installId) {
   //let uninstall = "";
   const debDistrolist = ['ubuntu', 'debian'];
@@ -443,8 +454,8 @@ function walkSync(dir, fileList, fileToFind) {
 // The main function of this action. After the archive is downloaded and
 // extracted this function adds it location to the path. This will make sure
 // other steps in your workflow will be able to call the CSP Driver.
-async function run(currentOs, currentDistro, version) {
-  core.info(`Identified '${currentDistro}' for ${currentOs}`);
+async function run(currentOs, currentDistro, currentFamily, version) {
+  core.info(`Identified '${currentDistro}' for ${currentFamily} ${currentOs}`);
   
   let cachedPath = await downloadCSPDriver(baseURL, currentOs, currentDistro, version);
 
