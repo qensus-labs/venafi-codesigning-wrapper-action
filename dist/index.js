@@ -28,7 +28,7 @@ const authURL = core.getInput('tpp-auth-url');
 
 const hsmURL = core.getInput('tpp-hsm-url');
 
-async function createWinSetupFile(filePath, content) {
+async function createFile(filePath, content) {
   try {
     fs.writeFileSync(filePath, content);
   } catch (exception) {
@@ -46,37 +46,28 @@ function extractSemver(version) {
 }
 
 async function uninstallCSPDriver(currentOs, currentDistro, currentFamily, installId) {
-  if (currentOs == 'Linux' && currentFamily == 'debian' ) {
-    const {exitCode, stdout}  = await exec.getExecOutput('sudo', ['apt', 'remove', installId, '-y' ], {
+  const executeCommand = async (command, args) => {
+    const { exitCode, stdout, stderr } = await exec.getExecOutput(command, args, {
       silent: true,
       ignoreReturnCode: true
     });
-    core.debug(`removal: exitcode[${exitCode}] with stdout: ${stdout} }`);
-  }
-  else if (currentOs == 'Linux' && currentFamily == 'redhat' ) {
-    const {exitCode, stdout}  = await exec.getExecOutput('sudo', ['yum', 'remove', installId, '-y' ], {
-      silent: true,
-      ignoreReturnCode: true
-    });
-    core.debug(`removal: exitcode[${exitCode}] with stdout: ${stdout} }`);
-  }
-  else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
+    core.debug(`removal: exitcode[${exitCode}] with stdout: ${stdout} ${stderr ? `stderr: ${stderr}` : ''}`);
+  };
+
+  if (currentOs === 'Linux') {
+    if (currentFamily === 'debian') {
+      await executeCommand('sudo', ['apt', 'remove', installId, '-y']);
+    } else if (currentFamily === 'redhat') {
+      await executeCommand('sudo', ['yum', 'remove', installId, '-y']);
+    }
+  } else if (currentOs === 'Windows_NT' && currentDistro === 'default') {
+    await executeCommand('msiexec', ['/qn', '/x', installId]);
+  } else if (currentOs === 'Darwin' && currentDistro === 'default') {
     // Requires some work
-    const {exitCode, stdout, stderr}  = await exec.getExecOutput('msiexec', ['/qn', '/x', installId ], {
-      silent: true,
-      ignoreReturnCode: true
-    });
-    core.debug(`removal: exitcode[${exitCode}] with stdout: ${stdout} stderr ${stderr} }`);
-  }
-  else if (currentOs == 'Darwin' && currentDistro == 'default') {
-    // Requires some work
-  }
-  else {
+  } else {
     console.log('Unsupported operating system or distribution detected');
   }
 }
-
-
 
 // Function to check currentBase of the installation and if needed trigger a reinstall
 async function checkCSPDriverSetup(currentOs, currentDistro, currentFamily, version) {
@@ -148,7 +139,7 @@ async function checkCSPDriverSetup(currentOs, currentDistro, currentFamily, vers
     Get-ChildItem -Path HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\ | Get-ItemProperty | Select-Object DisplayName, DisplayVersion, UninstallString |  Where-Object {($_.DisplayName -like "*Venafi*Code*Signing*")} | Format-List
     `
     core.debug(`content: ${content}`);
-    await createWinSetupFile(util.format("%s\\%s",tempDir, 'venafi-csp-check-install.ps1'), content);
+    await createFile(util.format("%s\\%s",tempDir, 'venafi-csp-check-install.ps1'), content);
     const {exitCode, stdout, stderr} = await exec.getExecOutput('powershell', [
       "-File",
       `${tempDir}\\venafi-csp-check-install.ps1`
@@ -358,7 +349,7 @@ async function downloadCSPDriver(baseURL, currentOs, currentDistro, currentFamil
       msiexec /qn /i "${package}"
       `
       core.debug(`content: ${content}`);
-      createWinSetupFile(util.format("%s/%s",cachedToolPath, download.setupfile), content);
+      createFile(util.format("%s/%s",cachedToolPath, download.setupfile), content);
     }
 
     core.debug(`cacheDir: ${cachedToolPath}`);
