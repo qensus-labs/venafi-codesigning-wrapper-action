@@ -76,7 +76,7 @@ async function checkCSPDriverSetup(currentOs, currentDistro, currentFamily, vers
   let reinstall = true;
   let installId = "venaficodesign";
 
-  const execCheck = async (command, args) => {
+  const checkInstall = async (command, args) => {
     const { exitCode, stdout, stderr } = await exec.getExecOutput(command, args, {
       silent: true,
       ignoreReturnCode: true
@@ -85,7 +85,7 @@ async function checkCSPDriverSetup(currentOs, currentDistro, currentFamily, vers
     return { exitCode, stdout };
   };
 
-  const parseOutput = (stdout, key) => {
+  const parseVersion = (stdout, key) => {
     const lines = stdout.trim().split('\n');
     lines.forEach(item => {
       const [k, ...vParts] = item.toLowerCase().trim().split(':');
@@ -105,9 +105,9 @@ async function checkCSPDriverSetup(currentOs, currentDistro, currentFamily, vers
       : null;
 
     if (commandArgs) {
-      const { exitCode, stdout } = await execCheck('sudo', commandArgs);
+      const { exitCode, stdout } = await checkInstall('sudo', commandArgs);
       if (exitCode === 0) {
-        parseOutput(stdout, 'version');
+        parseVersion(stdout, 'version');
         if (localSemver.match(semver)) {
           core.info(`Matched CSP Driver semantic version ${localSemver}`);
           reinstall = false;
@@ -124,12 +124,12 @@ async function checkCSPDriverSetup(currentOs, currentDistro, currentFamily, vers
     `;
     core.debug(`content: ${script}`);
     await createFile(`${tempDir}\\venafi-csp-check-install.ps1`, script);
-    const { exitCode, stdout, stderr } = await execCheck('powershell', [
+    const { exitCode, stdout } = await checkInstall('powershell', [
       "-File",
       `${tempDir}\\venafi-csp-check-install.ps1`
     ]);
     if (exitCode === 0) {
-      parseOutput(stdout, 'displayversion');
+      parseVersion(stdout, 'displayversion');
       if (localSemver.match(semver)) {
         core.info(`Matched CSP Driver semantic version ${localSemver}`);
         reinstall = false;
