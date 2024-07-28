@@ -148,10 +148,10 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
     Get-ChildItem -Path HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\ | Get-ItemProperty | Select-Object DisplayName, DisplayVersion, UninstallString |  Where-Object {($_.DisplayName -like "*Venafi*Code*Signing*")} | Format-List
     `
     core.debug(`content: ${content}`);
-    await createWinSetupFile(util.format("%s%s",tempDir, '\venafi-csp-check-install.ps1'), content);
+    await createWinSetupFile(util.format("%s\\%s",tempDir, 'venafi-csp-check-install.ps1'), content);
     const {exitCode, stdout, stderr} = await exec.getExecOutput('powershell', [
       "-File",
-      `"${tempDir}\venafi-csp-check-install.ps1"`
+      `"${tempDir}\\venafi-csp-check-install.ps1"`
     ],
       {
       silent: true,
