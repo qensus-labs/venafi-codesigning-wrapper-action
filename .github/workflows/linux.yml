@@ -23,7 +23,7 @@ jobs:
       - name: Check CSPDriver (version)
         run: |
           pkcs11config --version
-          pkcs11config trace --file=tracing.out --output=stdout
+        # pkcs11config trace --file=tracing.out --output=stdout
       - name: Setup Java SDK
         uses: actions/setup-java@v4
         with:
@@ -57,7 +57,6 @@ jobs:
           TPP_HSM_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
           TPP_USERNAME: signer
           TPP_PASSWORD: ${{ secrets.TPP_PASSWORD }}
-          VENAFI_CLIENT_TOOLS_DIR: '${{ runner.tool_cache }}/CSPDriver/24.1.0/x64/opt/venafi/codesign'
           INPUT_PATH: foo.jar
           CERTIFICATE_LABEL: github-signer-development-codesigner
       - name: verify artifact with JarSigner
@@ -67,6 +66,5 @@ jobs:
           TPP_HSM_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
           TPP_USERNAME: signer
           TPP_PASSWORD: ${{ secrets.TPP_PASSWORD }}
-          VENAFI_CLIENT_TOOLS_DIR: '${{ runner.tool_cache }}/CSPDriver/24.1.0/x64/opt/venafi/codesign'
           INPUT_PATH: foo.jar
           CERTIFICATE_LABEL: github-signer-development-codesigner

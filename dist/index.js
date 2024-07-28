@@ -11,8 +11,14 @@ const core = __nccwpck_require__(6024);
 const tc = __nccwpck_require__(3594);
 const exec = __nccwpck_require__(2423);
 
-// The name of the tool we are installing with this action.
-const toolName = "CSPDriver";
+// Variable from Github to asign.
+const tempDir = process.env['RUNNER_TEMP'];
+
+// The name of the tool we are installing with this action, which is 'Venafi Code Sign Protect'
+const toolName = "Venafi_CSP";
+
+// The architecture of the system to install the package on. Most scenarios 'intel' is applicable.
+const architecture = core.getInput('architecture');
 
 // Base form of the the URL to download the release archives. As long as this
 // does not change this will be able to download any version the CLI.
@@ -22,9 +28,163 @@ const authURL = core.getInput('tpp-auth-url');
 
 const hsmURL = core.getInput('tpp-hsm-url');
 
+// Util to create a file with certain content to execute, such as a script. File can be temporary or static.
+async function createFile(filePath, content) {
+  try {
+    fs.writeFileSync(filePath, content);
+  } catch (exception) {
+    throw new Error(
+      util.format("Failed to write contents to", filePath),
+      core.error(`The following exception occured: ${exception}`)
+    );
+  }
+}
 
-async function setCSPDriverDefaultConfig(currentOs, cachedPath, authURL, hsmURL) {
-  
+// Utii too extract the '<Major>.<Minor>' version the Semmantic Versioning Convention. Example is '24.1'
+function extractSemver(version) {
+  var [major, minor] = version.split('.');
+  var semver = major + "." + minor;
+  return semver;
+}
+
+// Function to uninstall or remove the previous installed Venafi_CSP package.
+async function removeVenafiCSP(currentOs, currentDistro, currentFamily, installId) {
+  const executeCommand = async (command, args) => {
+    const { exitCode, stdout, stderr } = await exec.getExecOutput(command, args, {
+      silent: true,
+      ignoreReturnCode: true
+    });
+    core.debug(`removal: exitcode[${exitCode}] with stdout: ${stdout} ${stderr ? `stderr: ${stderr}` : ''}`);
+  };
+
+  if (currentOs === 'Linux') {
+    if (currentFamily === 'debian') {
+      await executeCommand('sudo', ['apt', 'remove', installId, '-y']);
+    } else if (currentFamily === 'redhat') {
+      await executeCommand('sudo', ['yum', 'remove', installId, '-y']);
+    }
+  } else if (currentOs === 'Windows_NT' && currentDistro === 'default') {
+    await executeCommand('msiexec', ['/qn', '/x', installId]);
+  } else if (currentOs === 'Darwin' && currentDistro === 'default') {
+    // Requires some work
+  } else {
+    console.log('Unsupported operating system or distribution detected');
+  }
+}
+
+// Function to check if a current Venafi_CSP installation exists, checks current installation version, and if needed trigger a reinstall.
+async function checkVenafiCSP(currentOs, currentDistro, currentFamily, version) {
+  const semver = extractSemver(version);
+  let localSemver = "";
+  let reinstall = true;
+  let installId = "venaficodesign";
+
+  const checkInstall = async (command, args) => {
+    const { exitCode, stdout, stderr } = await exec.getExecOutput(command, args, {
+      silent: true,
+      ignoreReturnCode: true
+    });
+    core.debug(`ExitCode: ${exitCode} StdOut: ${stdout} ${stderr ? `ErrOut: ${stderr}` : ''}`);
+    return { exitCode, stdout };
+  };
+
+  const parseVersion = (stdout, key) => {
+    const lines = stdout.trim().split('\n');
+    lines.forEach(item => {
+      const [k, ...vParts] = item.toLowerCase().trim().split(':');
+      const value = vParts.join(':').trim();
+      if (k.trim() === key) {
+        core.info(`Detected CSP Driver installation version ${value}`);
+        localSemver = extractSemver(value);
+      }
+    });
+  };
+
+  if (currentOs === 'Linux') {
+    const commandArgs = currentFamily === 'debian' 
+      ? ['apt', 'show', installId] 
+      : currentFamily === 'redhat' 
+      ? ['yum', 'info', installId] 
+      : null;
+
+    if (commandArgs) {
+      const { exitCode, stdout } = await checkInstall('sudo', commandArgs);
+      if (exitCode === 0) {
+        parseVersion(stdout, 'version');
+        if (localSemver.match(semver)) {
+          core.info(`Matched CSP Driver semantic version ${localSemver}`);
+          reinstall = false;
+        }
+      } else {
+        core.info(`Detected no CSP Driver installation`);
+      }
+    }
+  } else if (currentOs === 'Windows_NT' && currentDistro === 'default') {
+    const script = `
+      Get-ChildItem -Path HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\ |
+      Get-ItemProperty | Select-Object DisplayName, DisplayVersion, UninstallString |
+      Where-Object {($_.DisplayName -like "*Venafi*Code*Signing*")} | Format-List
+    `;
+    core.debug(`content: ${script}`);
+    await createFile(`${tempDir}\\venafi-csp-check-install.ps1`, script);
+    const { exitCode, stdout } = await checkInstall('powershell', [
+      "-File",
+      `${tempDir}\\venafi-csp-check-install.ps1`
+    ]);
+    if (exitCode === 0) {
+      parseVersion(stdout, 'displayversion');
+      if (localSemver.match(semver)) {
+        core.info(`Matched CSP Driver semantic version ${localSemver}`);
+        reinstall = false;
+      }
+      const match = stdout.match(/\{[0-9A-Fa-f\-]+\}/);
+      if (match) installId = match[0];
+    }
+  } else if (currentOs === 'Darwin' && currentDistro === 'default') {
+    // Requires some work
+  } else {
+    console.log('Unsupported operating system or distribution detected');
+  }
+
+  core.debug(`reinstall: ${reinstall}`);
+  return { reinstall, installId };
+}
+
+
+// Function that is the core part that installs the Venafi_CSP package
+async function installVenafiCSP(cachedToolPath, packageName, currentOs, currentDistro, currentFamily) {
+  var packageInstaller;
+  var result = "";
+  const options = {
+    listeners: {
+      stdout: (data) => { result += data.toString() }
+    }
+  }
+
+  if (currentOs == 'Linux' && currentFamily == 'debian' ) {
+    packageInstaller = 'dpkg'
+    await exec.exec('sudo', [packageInstaller, '-i', util.format("%s/%s",cachedToolPath, packageName) ], options );
+  }
+  else if (currentOs == 'Linux' && currentFamily == 'redhat' ) {
+    packageInstaller = 'rpm'
+    await exec.exec('sudo', [packageInstaller, '-Uvh', util.format("%s/%s",cachedToolPath, packageName) ], options );
+  }
+  else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
+    packageInstaller = 'msiexec'
+    await exec.exec('powershell', ['Start-Process','-FilePath', util.format("%s\\%s",cachedToolPath, packageName), '-Wait'  ], options );
+  }
+  else if (currentOs == 'Darwin' && currentDistro == 'default') {
+    packageInstaller = 'installer'
+    await exec.exec('sudo', [packageInstaller, '-pkg', '"installer/Venafi CodeSign Protect Clients.pkg/"', '-target', '/' ], options );
+  }
+  else {
+    console.log('Unsupported operating system or distribution detected');
+  }
+  return result;
+}
+
+// Configuration function to configure default parameters for Venafi_CSP platform connectivity. 
+async function setDefaultParams(currentOs, cachedPath, authURL, hsmURL) {
   var result = "";
   const options = {
     listeners: {
@@ -48,74 +208,116 @@ async function setCSPDriverDefaultConfig(currentOs, cachedPath, authURL, hsmURL)
 }
 
 
-// Returns the URL used to download a specific version of the CSP Driver (either PKCS11 for Linux or CSP for Windows) for a
-// specific platform.
-function getCSPDriverDownloadURL(baseURL, currentOs, version) {
+// Function too get the package related information and returns it in a formatted way.
+function getPackageInfo(baseURL, currentOs, currentDistro, currentFamily, version) {
+  var url = "";
   var file = "";
-  switch (currentOs) {
-    case "Linux":
-      file = `venafi-codesigningclients-${version}-linux-x86_64.tar.gz`;
-      break;
+  if (currentOs == 'Linux' && currentFamily == 'debian' && architecture == 'intel') {
+    file = `venafi-csc-latest-x86_64.deb`;
+  }
+  else if (currentOs == 'Linux' && currentFamily == 'debian' && architecture == 'arm') {
+    file = `venafi-csc-latest-aarch64.deb`;
+  }
+  else if (currentOs == 'Linux' && currentFamily == 'redhat' && architecture == 'intel') {
+    file = `venafi-csc-latest-x86_64.rpm`;
+  }
+  else if (currentOs == 'Linux' && currentFamily == 'redhat' && architecture == 'arm') {
+    file = `venafi-csc-latest-aarch64.rpm`;
+  }   
+  else if (currentOs == 'Windows_NT' && currentDistro == 'default' && architecture == 'intel') {
+    file = `venafi-csc-latest-x86_64.msi`;
+  }
+  else if (currentOs == 'Darwin' && currentDistro == 'default' && architecture == 'intel') {
+    file = `venafi-csc-latest-universal.dmg`;
+  }
+  else {
+    console.log('Unsupported operating system or distribution detected');
+  }
+  url = util.format("%s/%s", baseURL, file);
+  var savefile = file.replace('latest', version);
+  var setupfile = file.replace('latest', version);
 
-    case "Windows_NT":
-    default:
-      file = `VenafiCodeSigningClients-${version}-x64.zip`;
-      break;
+  if (currentOs == 'Windows_NT') {
+     setupfile = setupfile.replace('.msi', '.bat');
   }
 
-  return util.format("%s/%s", baseURL, file);
+  return {
+    url: url,
+    savefile: savefile,
+    setupfile:setupfile
+  }
 }
 
+// Function which is the core for downloading and caching the initial package. Additional it is the umbrella for other functions.
+async function downloadVenafiCSP(baseURL, currentOs, currentDistro, currentFamily, version) {
+  
+  // Initial setup or already installed with the correct version?
+  const { reinstall, installId }  = await checkVenafiCSP(currentOs, currentDistro, currentFamily, version);
+  core.debug(`reinstall: ${reinstall}`);
+  
+  if (reinstall) {
+    await removeVenafiCSP(currentOs, currentDistro, currentFamily, installId);
+  }
 
-// Downloads and installs the package to the runner and returns the path.
-async function downloadCSPDriver(baseURL, currentOs, version) {
-  // See if we have cached this tool already
+  // Generate all information for the Venafi_CSP downloadTool.
+  const download = getPackageInfo(baseURL,currentOs,currentDistro, currentFamily, version);
+
+  // Maybe the Venafi_CSP package is already cached?
   let cachedToolPath = tc.find(toolName, version);
-
   core.debug(`find: ${cachedToolPath}`)
 
-  // If we did not find the tool in the cache download it now.
+  // If the Venafi_CSP package is not available from cache, let's download.
   if (!cachedToolPath) {
     let downloadPath;
-    let downloadUrl = getCSPDriverDownloadURL(baseURL, currentOs, version);
     try {
-      core.info(`Downloading CSP Driver from ${downloadUrl}...`);
-      downloadPath = await tc.downloadTool(downloadUrl);
+      core.info(`Downloading CSP Driver from ${download.url}...`);
+      downloadPath = await tc.downloadTool(download.url, download.savefile);
       core.debug(`downloadTool: ${downloadPath}`);
     } catch (exception) {
       throw new Error(
-        util.format("Failed to download CSPDriver from location", downloadUrl),
+        util.format("Failed to download CSPDriver from location", download.url),
         core.error(`The following axception occured: ${exception}`)
       );
     }
-    // (chmod a+rwx) sets permissions so that, User / owner can read, can
-    // write and can execute. Group can read, can write and can execute.
-    // Others can read, can write and can execute.
+    
+    // Set's temporary permissions for copying over the package.
     fs.chmodSync(downloadPath, "777");
 
-    // Stores the path where the archive was extracted
-    let installedToolPath;
-    if (currentOs === "Windows_NT") {
-      fs.renameSync(downloadPath, downloadPath + '.zip' );
-      installedToolPath = await tc.extractZip(downloadPath + '.zip',downloadPath);
-      core.debug(`extractZip: ${installedToolPath}`);
-    } else {
-      // Both Linux and macOS use a .tar.gz file
-      installedToolPath = await tc.extractTar(downloadPath);
-      core.debug(`extractTar: ${installedToolPath}`);
-      // Fix to remove usr dir otherwise broken links exists
-      fs.rmdirSync (installedToolPath + `/usr`, { recursive: true, force: true });
-
+    // Does the actual caching from the downloadPath to the cachingPath.
+    cachedToolPath = await tc.cacheFile(downloadPath, download.savefile, toolName, version);
+    if (!cachedToolPath) {
+      throw new Error(
+        util.format("CSP Driver package cannot be cached", cachedToolPath)
+      );
+    }
+    else {
+      fs.rmSync(downloadPath);
     }
 
-    // Cache to tool so we do not have to download multiple times
-    cachedToolPath = await tc.cacheDir(installedToolPath, toolName, version);
+    // This is needed, since the @actions/Toolkit/Caching module checks (using legacy env: %PATHEXT% list) if the tool/package is executable on Windows. This isn' the case for Linux.
+    if (currentOs == 'Windows_NT') {
+      core.debug(`Setup initialized using batch file`);
+      var package = util.format("%s\\%s",cachedToolPath, download.savefile);
+      core.debug(`package: ${package}`);
+      const content = `
+      msiexec /qn /i "${package}"
+      `
+      core.debug(`content: ${content}`);
+      createFile(util.format("%s/%s",cachedToolPath, download.setupfile), content);
+    }
 
     core.debug(`cacheDir: ${cachedToolPath}`);
   }
+  
+  // Now that we have the install package let's installl this for the currentOs + distribution.
+  if (reinstall) {
+    var setupPackage = await installVenafiCSP(cachedToolPath, download.setupfile, currentOs, currentDistro, currentFamily);
+    core.debug(`Installation results: ${setupPackage}`);
+  }
 
-  // Get the full path to the executable
-  const toolPath = findTool(currentOs, cachedToolPath);
+  // Now conclude we can find the correct tool/package and if it's executable on Windows.
+  const toolPath = findTool(cachedToolPath, download.setupfile);
+  core.debug(`toolPath: ${toolPath}`);
   if (!toolPath) {
     throw new Error(
       util.format("CSP Driver package not found in path", cachedToolPath)
@@ -124,20 +326,16 @@ async function downloadCSPDriver(baseURL, currentOs, version) {
 
   core.info(`CSP Driver installed to ${toolPath}...`);
 
-  // (chmod a+rwx) sets permissions so that, User / owner can read, can
-  // write and can execute. Group can read, can write and can execute.
-  // Others can read, can write and can execute.
-  fs.chmodSync(toolPath, "777");
+  // Set the toolPath to 775, since other could start the actions-runner daemon.
+  fs.chmodSync(toolPath, "775");
 
   return toolPath;
 }
 
-// Returns a install path of the desired tool
-function findTool(currentOs, rootFolder) {
-  core.info(`findTool started for ${rootFolder}`);
-  fs.chmodSync(rootFolder, "777");
-  core.info(`Chmod stopped`);
-  // Holds all the paths. The tool might be installed in multiple locations.
+// Util based on setup-dapr that looks for a cached package and returns the path.
+function findTool(rootFolder, packageName) {
+  core.info(`Discovery started for ${packageName} ${rootFolder}`);
+ 
   var fileList;
 
   // walkSync is recursive which is why we pass in fileList and assign it the
@@ -145,7 +343,7 @@ function findTool(currentOs, rootFolder) {
   fileList = walkSync(
     rootFolder,
     fileList,
-    getExecutableName(currentOs)
+    packageName
   );
 
   if (!fileList || fileList.length == 0) {
@@ -159,24 +357,7 @@ function findTool(currentOs, rootFolder) {
   }
 }
 
-// Returns the full name of the executable with extension if any. On Linux and
-// macOS the executable does not have an extension but on Windows it does.
-function getExecutableName(currentOs) {
-  var executableName = "";
-  switch (currentOs) {
-    case "Linux":
-      executableName = `pkcs11config`;
-      break;
-
-    case "Windows_NT":
-    default:
-      executableName = `cspconfig.exe`;
-      break;
-  }
-  return executableName;
-}
-
-// Returns a list of path to the fileToFind in the dir provided.
+// Util based on setup-dapr that returns list of path to the fileToFind in the dir provided.
 function walkSync(dir, fileList, fileToFind) {
   var files = fs.readdirSync(dir);
 
@@ -199,11 +380,11 @@ function walkSync(dir, fileList, fileToFind) {
   return fileList;
 }
 
-// The main function of this action. After the archive is downloaded and
-// extracted this function adds it location to the path. This will make sure
-// other steps in your workflow will be able to call the CSP Driver.
-async function run(currentOs, version) {
-  let cachedPath = await downloadCSPDriver(baseURL, currentOs, version);
+// The main function of this action. It hooks the actual setup Venafi_CSP functions to more configuration functions.
+async function run(currentOs, currentDistro, currentFamily, version) {
+  core.info(`Identified '${currentDistro}' for ${currentFamily} ${currentOs}`);
+  
+  let cachedPath = await downloadVenafiCSP(baseURL, currentOs, currentDistro, currentFamily, version);
 
   if (!process.env["PATH"].startsWith(path.dirname(cachedPath))) {
     core.addPath(path.dirname(cachedPath));
@@ -212,7 +393,7 @@ async function run(currentOs, version) {
   let cachedConfig
 
   if (core.getInput('include-config') == 'true') {
-    cachedConfig = await setCSPDriverDefaultConfig(currentOs, cachedPath, authURL, hsmURL);
+    cachedConfig = await setDefaultParams(currentOs, cachedPath, authURL, hsmURL);
   }
 
   core.info(`CSP Driver version: '${version}' has been cached at ${cachedPath}`);
@@ -225,9 +406,9 @@ async function run(currentOs, version) {
 
 module.exports = {
   run: run,
-  setCSPDriverDefaultConfig: setCSPDriverDefaultConfig,
-  downloadCSPDriver: downloadCSPDriver,
-  getCSPDriverDownloadURL: getCSPDriverDownloadURL,
+  setDefaultParams: setDefaultParams,
+  downloadVenafiCSP: downloadVenafiCSP,
+  getPackageInfo: getPackageInfo,
 };
 
 /***/ }),
@@ -6977,8 +7158,41 @@ var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
 const os = __nccwpck_require__(2037);
+const fs = __nccwpck_require__(7147);
 const action = __nccwpck_require__(1834);
 const core = __nccwpck_require__(6024);
+
+/*
+This function we determine the applicable distribution of the Linux operating system and sets the default distribution for other operating systems like Windows and MacOS.
+*/
+function getLinuxDistro(currentOs) {
+  let currentDistro = "";
+  let currentFamily = "";
+  if (currentOs == 'Linux') {
+    const debDistrolist = ['ubuntu', 'debian'];
+    const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
+    const data = fs.readFileSync('/etc/os-release', 'utf8');
+    const lines = data.toString().split('\n');
+    const idLine = lines.find(line => line.startsWith('ID='));
+    if (idLine) {
+      currentDistro = idLine.split('=')[1].replace(/^"(.*)"$/, '$1');
+      if (debDistrolist.includes(currentDistro)) {
+        currentFamily = 'debian';
+      }
+      else if (rhelDistrolist.includes(currentDistro)) {
+        currentFamily = 'redhat';
+      }
+      else {
+        currentFamily = 'unknown';
+      }
+    }
+  }
+  else {
+    currentDistro = 'default';
+    currentFamily = 'default';
+  }
+  return {currentDistro, currentFamily};
+}
 
 /*
 This is how the action is used:
@@ -6998,8 +7212,14 @@ async function run() {
     // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
     core.debug(new Date().toTimeString());
 
+    // determine current operating system used by github runner
+    const currentOs = os.type();
+
+     // determine current distro and family of the Linux operating system used by the github runner
+     const { currentDistro, currentFamily } = getLinuxDistro(currentOs);
+
     // run the action code
-    await action.run(os.type(), version);
+    await action.run(currentOs, currentDistro, currentFamily, version);
 
     core.info(new Date().toTimeString());
   } catch (error) {
