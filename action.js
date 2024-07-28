@@ -39,20 +39,20 @@ function extractSemver(version) {
   return semver;
 }
 
-async function uninstallCSPDriver(currentOs, currentDistro) {
+async function uninstallCSPDriver(currentOs, currentDistro, installId) {
   //let uninstall = "";
   const debDistrolist = ['ubuntu', 'debian'];
   const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
 
   if (currentOs == 'Linux' && debDistrolist.includes(currentDistro)) {
-    const {exitCode, stdout}  = await exec.getExecOutput('sudo', ['apt', 'remove', 'venaficodesign', '-y' ], {
+    const {exitCode, stdout}  = await exec.getExecOutput('sudo', ['apt', 'remove', installId, '-y' ], {
       silent: true,
       ignoreReturnCode: true
     });
     core.debug(`removal: exitcode[${exitCode}] with stdout: ${stdout} }`);
   }
   else if (currentOs == 'Linux' && rhelDistrolist.includes(currentDistro)) {
-    const {exitCode, stdout}  = await exec.getExecOutput('sudo', ['yum', 'remove', 'venaficodesign', '-y' ], {
+    const {exitCode, stdout}  = await exec.getExecOutput('sudo', ['yum', 'remove', installId, '-y' ], {
       silent: true,
       ignoreReturnCode: true
     });
@@ -60,6 +60,11 @@ async function uninstallCSPDriver(currentOs, currentDistro) {
   }
   else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
     // Requires some work
+    const {exitCode, stdout, stderr}  = await exec.getExecOutput('msiexec', ['/qn', '/x', installId ], {
+      silent: true,
+      ignoreReturnCode: true
+    });
+    core.debug(`removal: exitcode[${exitCode}] with stdout: ${stdout} stderr ${stderr} }`);
   }
   else if (currentOs == 'Darwin' && currentDistro == 'default') {
     // Requires some work
@@ -78,9 +83,10 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
   const semver = extractSemver(version);
   let localSemver = "";
   let reinstall = true ;
+  let installId = "venaficodesign" ;
 
   if (currentOs == 'Linux' && debDistrolist.includes(currentDistro)) {
-    const {exitCode, stdout} = await exec.getExecOutput('sudo', ['apt', 'show', 'venaficodesign'], {
+    const {exitCode, stdout} = await exec.getExecOutput('sudo', ['apt', 'show', installId], {
       silent: true,
       ignoreReturnCode: true
     });
@@ -109,7 +115,7 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
     
   }
   else if (currentOs == 'Linux' && rhelDistrolist.includes(currentDistro)) {
-    const {exitCode, stdout} = await exec.getExecOutput('sudo', ['yum', 'info', 'venaficodesign'], {
+    const {exitCode, stdout} = await exec.getExecOutput('sudo', ['yum', 'info', installId], {
       silent: true,
       ignoreReturnCode: true
     });
@@ -125,7 +131,7 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
         if (key.trim() == 'version') {
           core.info(`Detected CSP Driver installation version ${value}`);
           localSemver = extractSemver(value);
-        }   
+        }
       });
       if (localSemver.match(semver)) {
         core.info(`Matched CSP Driver semantic version ${localSemver}`);
@@ -164,7 +170,11 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
         if (key.trim() == 'displayversion') {
           core.info(`Detected CSP Driver installation version ${value}`);
           localSemver = extractSemver(value);
-        }   
+        }
+        else if (key.trim() == 'uninstallstring') {
+          installId = value.match(/\{[0-9A-Fa-f\-]+\}/);
+        }
+
       });
     if (localSemver.match(semver)) {
       core.info(`Matched CSP Driver semantic version ${localSemver}`);
@@ -184,7 +194,7 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
     core.debug(`reinstall: ${reinstall}`);
   }
 
-  return reinstall;
+  return { reinstall, installId };
 }
 
 // Supported distro names are 'rhel','centos', 'rocky', 'ubuntu', 'amzn', 'fedora', 'debian' and 'ol'.
@@ -298,14 +308,13 @@ function getCSPDriverDownloadInfo(baseURL, currentOs, currentDistro, version) {
 
 // Downloads and installs the package to the runner and returns the path.
 async function downloadCSPDriver(baseURL, currentOs, currentDistro, version) {
-
   // Do we have the package installed and which version?
   // Do we need to replace or skip
-  const reinstall = await checkCSPDriverSetup(currentOs, currentDistro, version);
+  const { reinstall, installId }  = await checkCSPDriverSetup(currentOs, currentDistro, version);
   core.debug(`reinstall: ${reinstall}`);
   
   if (reinstall) {
-    await uninstallCSPDriver(currentOs, currentDistro);
+    await uninstallCSPDriver(currentOs, currentDistro, installId);
   }
 
   // Generate all information for the CSPDriver Download specification
