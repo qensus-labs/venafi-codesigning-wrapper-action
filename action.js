@@ -156,6 +156,20 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
     if (exitCode == 0) {
       const currentBase = stdout.trim().split('\n');
       core.debug(`currentBase: ${currentBase}`);
+
+      // Use forEach to add each element to the object
+      currentBase.forEach(item => {
+        const [key, ...valueParts] = item.toLowerCase().trim().split(':');
+        const value = valueParts.join(':').trim();
+        if (key.trim() == 'displayversion') {
+          core.info(`Detected CSP Driver installation version ${value}`);
+          localSemver = extractSemver(value);
+        }   
+      });
+    if (localSemver.match(semver)) {
+      core.info(`Matched CSP Driver semantic version ${localSemver}`);
+      reinstall = false;
+    }
     }
     
   }
