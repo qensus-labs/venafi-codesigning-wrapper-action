@@ -22,6 +22,7 @@ const authURL = core.getInput('tpp-auth-url');
 
 const hsmURL = core.getInput('tpp-hsm-url');
 
+// Util to create a file with certain content to execute, such as a script. File can be temporary or static.
 async function createFile(filePath, content) {
   try {
     fs.writeFileSync(filePath, content);
@@ -33,13 +34,15 @@ async function createFile(filePath, content) {
   }
 }
 
+// Utii too extract the '<Major>.<Minor>' version the Semmantic Versioning Convention. Example is '24.1'
 function extractSemver(version) {
   var [major, minor] = version.split('.');
   var semver = major + "." + minor;
   return semver;
 }
 
-async function uninstallCSPDriver(currentOs, currentDistro, currentFamily, installId) {
+// Function to uninstall or remove the previous installed Venafi_CSP package.
+async function removeVenafiCSP(currentOs, currentDistro, currentFamily, installId) {
   const executeCommand = async (command, args) => {
     const { exitCode, stdout, stderr } = await exec.getExecOutput(command, args, {
       silent: true,
@@ -63,8 +66,8 @@ async function uninstallCSPDriver(currentOs, currentDistro, currentFamily, insta
   }
 }
 
-// Function to check currentBase of the installation and if needed trigger a reinstall
-async function checkCSPDriverSetup(currentOs, currentDistro, currentFamily, version) {
+// Function to check if a current Venafi_CSP installation exists, checks current installation version, and if needed trigger a reinstall.
+async function checkVenafiCSP(currentOs, currentDistro, currentFamily, version) {
   const semver = extractSemver(version);
   let localSemver = "";
   let reinstall = true;
@@ -142,8 +145,8 @@ async function checkCSPDriverSetup(currentOs, currentDistro, currentFamily, vers
 }
 
 
-// Supported family is debian or redhat based.
-async function installCSPDriverPackage(cachedToolPath, packageName, currentOs, currentDistro, currentFamily) {
+// Function that is the core part that installs the Venafi_CSP package
+async function installVenafiCSP(cachedToolPath, packageName, currentOs, currentDistro, currentFamily) {
   var packageInstaller;
   var result = "";
   const options = {
@@ -161,16 +164,10 @@ async function installCSPDriverPackage(cachedToolPath, packageName, currentOs, c
     await exec.exec('sudo', [packageInstaller, '-Uvh', util.format("%s/%s",cachedToolPath, packageName) ], options );
   }
   else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
-    // start /wait msiexec /qn /i "VenafiCodeSigningClients-24.1.0-x64.msi"
     packageInstaller = 'msiexec'
     await exec.exec('powershell', ['Start-Process','-FilePath', util.format("%s\\%s",cachedToolPath, packageName), '-Wait'  ], options );
-    // await exec.exec('powershell', ['Start-Process', '-FilePath', packageInstaller,'-ArgumentList',"'/qn", '/i', util.format("%s\\%s'",cachedToolPath, packageName), '-Wait' ], options );
   }
   else if (currentOs == 'Darwin' && currentDistro == 'default') {
-    // mkdir -p installer
-    // sudo hdiutil attach "Venafi CodeSign Protect Clients v24.1.0-universal.dmg" -noautoopen -mountpoint installer/
-    // sudo installer -pkg "installer/Venafi CodeSign Protect Clients.pkg/" -target /
-    // sudo hdiutil detach installer
     packageInstaller = 'installer'
     await exec.exec('sudo', [packageInstaller, '-pkg', '"installer/Venafi CodeSign Protect Clients.pkg/"', '-target', '/' ], options );
   }
@@ -180,8 +177,8 @@ async function installCSPDriverPackage(cachedToolPath, packageName, currentOs, c
   return result;
 }
 
-async function setCSPDriverDefaultConfig(currentOs, cachedPath, authURL, hsmURL) {
-  
+// Configuration function to configure default parameters for Venafi_CSP platform connectivity. 
+async function setDefaultParams(currentOs, cachedPath, authURL, hsmURL) {
   var result = "";
   const options = {
     listeners: {
@@ -205,10 +202,8 @@ async function setCSPDriverDefaultConfig(currentOs, cachedPath, authURL, hsmURL)
 }
 
 
-// Returns an object with the URL and savefile used to download a specific version of the CSP Driver (either PKCS11 for Linux or CSP for Windows) for a
-// specific operating system, distribution and architecture. 
-// Supported family is debian or redhat based.
-function getCSPDriverDownloadInfo(baseURL, currentOs, currentDistro, currentFamily, version) {
+// Function too get the package related information and returns it in a formatted way.
+function getPackageInfo(baseURL, currentOs, currentDistro, currentFamily, version) {
   var url = "";
   var file = "";
   if (currentOs == 'Linux' && currentFamily == 'debian' && architecture == 'intel') {
@@ -247,25 +242,25 @@ function getCSPDriverDownloadInfo(baseURL, currentOs, currentDistro, currentFami
   }
 }
 
-// Downloads and installs the package to the runner and returns the path.
-async function downloadCSPDriver(baseURL, currentOs, currentDistro, currentFamily, version) {
-  // Do we have the package installed and which version?
-  // Do we need to replace or skip
-  const { reinstall, installId }  = await checkCSPDriverSetup(currentOs, currentDistro, currentFamily, version);
+// Function which is the core for downloading and caching the initial package. Additional it is the umbrella for other functions.
+async function downloadVenafiCSP(baseURL, currentOs, currentDistro, currentFamily, version) {
+  
+  // Initial setup or already installed with the correct version?
+  const { reinstall, installId }  = await checkVenafiCSP(currentOs, currentDistro, currentFamily, version);
   core.debug(`reinstall: ${reinstall}`);
   
   if (reinstall) {
-    await uninstallCSPDriver(currentOs, currentDistro, currentFamily, installId);
+    await removeVenafiCSP(currentOs, currentDistro, currentFamily, installId);
   }
 
-  // Generate all information for the CSPDriver Download specification
-  const download = getCSPDriverDownloadInfo(baseURL,currentOs,currentDistro, currentFamily, version);
+  // Generate all information for the Venafi_CSP downloadTool.
+  const download = getPackageInfo(baseURL,currentOs,currentDistro, currentFamily, version);
 
-  // See if we have cached this tool already
+  // Maybe the Venafi_CSP package is already cached?
   let cachedToolPath = tc.find(toolName, version);
   core.debug(`find: ${cachedToolPath}`)
 
-  // If we did not find the tool in the cache download it now.
+  // If the Venafi_CSP package is not available from cache, let's download.
   if (!cachedToolPath) {
     let downloadPath;
     try {
@@ -279,12 +274,10 @@ async function downloadCSPDriver(baseURL, currentOs, currentDistro, currentFamil
       );
     }
     
-    // (chmod a+rwx) sets permissions so that, User / owner can read, can
-    // write and can execute. Group can read, can write and can execute.
-    // Others can read, can write and can execute.
+    // Set's temporary permissions for copying over the package.
     fs.chmodSync(downloadPath, "777");
 
-    // Cache the downloaded installationfile to the tool-cache folder.
+    // Does the actual caching from the downloadPath to the cachingPath.
     cachedToolPath = await tc.cacheFile(downloadPath, download.savefile, toolName, version);
     if (!cachedToolPath) {
       throw new Error(
@@ -295,6 +288,7 @@ async function downloadCSPDriver(baseURL, currentOs, currentDistro, currentFamil
       fs.rmSync(downloadPath);
     }
 
+    // This is needed, since the @actions/Toolkit/Caching module checks (using legacy env: %PATHEXT% list) if the tool/package is executable on Windows. This isn' the case for Linux.
     if (currentOs == 'Windows_NT') {
       core.debug(`Setup initialized using batch file`);
       var package = util.format("%s\\%s",cachedToolPath, download.savefile);
@@ -309,12 +303,13 @@ async function downloadCSPDriver(baseURL, currentOs, currentDistro, currentFamil
     core.debug(`cacheDir: ${cachedToolPath}`);
   }
   
-  // Now that we have the install package let's installl this for the currentOs + distribution
+  // Now that we have the install package let's installl this for the currentOs + distribution.
   if (reinstall) {
-    var setupPackage = await installCSPDriverPackage(cachedToolPath, download.setupfile, currentOs, currentDistro, currentFamily);
+    var setupPackage = await installVenafiCSP(cachedToolPath, download.setupfile, currentOs, currentDistro, currentFamily);
     core.debug(`Installation results: ${setupPackage}`);
   }
 
+  // Now conclude we can find the correct tool/package and if it's executable on Windows.
   const toolPath = findTool(cachedToolPath, download.setupfile);
   core.debug(`toolPath: ${toolPath}`);
   if (!toolPath) {
@@ -325,18 +320,16 @@ async function downloadCSPDriver(baseURL, currentOs, currentDistro, currentFamil
 
   core.info(`CSP Driver installed to ${toolPath}...`);
 
-  // (chmod a+rwx) sets permissions so that, User / owner can read, can
-  // write and can execute. Group can read, can write and can execute.
-  // Others can read and can execute.
+  // Set the toolPath to 775, since other could start the actions-runner daemon.
   fs.chmodSync(toolPath, "775");
 
   return toolPath;
 }
 
-// Returns a install path of the desired tool
+// Util based on setup-dapr that looks for a cached package and returns the path.
 function findTool(rootFolder, packageName) {
   core.info(`Discovery started for ${packageName} ${rootFolder}`);
-  // Holds all the paths. The tool might be installed in multiple locations.
+ 
   var fileList;
 
   // walkSync is recursive which is why we pass in fileList and assign it the
@@ -358,7 +351,7 @@ function findTool(rootFolder, packageName) {
   }
 }
 
-// Returns a list of path to the fileToFind in the dir provided.
+// Util based on setup-dapr that returns list of path to the fileToFind in the dir provided.
 function walkSync(dir, fileList, fileToFind) {
   var files = fs.readdirSync(dir);
 
@@ -381,13 +374,11 @@ function walkSync(dir, fileList, fileToFind) {
   return fileList;
 }
 
-// The main function of this action. After the archive is downloaded and
-// extracted this function adds it location to the path. This will make sure
-// other steps in your workflow will be able to call the CSP Driver.
+// The main function of this action. It hooks the actual setup Venafi_CSP functions to more configuration functions.
 async function run(currentOs, currentDistro, currentFamily, version) {
   core.info(`Identified '${currentDistro}' for ${currentFamily} ${currentOs}`);
   
-  let cachedPath = await downloadCSPDriver(baseURL, currentOs, currentDistro, currentFamily, version);
+  let cachedPath = await downloadVenafiCSP(baseURL, currentOs, currentDistro, currentFamily, version);
 
   if (!process.env["PATH"].startsWith(path.dirname(cachedPath))) {
     core.addPath(path.dirname(cachedPath));
@@ -396,7 +387,7 @@ async function run(currentOs, currentDistro, currentFamily, version) {
   let cachedConfig
 
   if (core.getInput('include-config') == 'true') {
-    cachedConfig = await setCSPDriverDefaultConfig(currentOs, cachedPath, authURL, hsmURL);
+    cachedConfig = await setDefaultParams(currentOs, cachedPath, authURL, hsmURL);
   }
 
   core.info(`CSP Driver version: '${version}' has been cached at ${cachedPath}`);
@@ -409,7 +400,7 @@ async function run(currentOs, currentDistro, currentFamily, version) {
 
 module.exports = {
   run: run,
-  setCSPDriverDefaultConfig: setCSPDriverDefaultConfig,
-  downloadCSPDriver: downloadCSPDriver,
-  getCSPDriverDownloadInfo: getCSPDriverDownloadInfo,
+  setDefaultParams: setDefaultParams,
+  downloadVenafiCSP: downloadVenafiCSP,
+  getPackageInfo: getPackageInfo,
 };
