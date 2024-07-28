@@ -90,7 +90,7 @@ async function checkCSPDriverSetup(currentOs, currentDistro, currentFamily, vers
     lines.forEach(item => {
       const [k, ...vParts] = item.toLowerCase().trim().split(':');
       const value = vParts.join(':').trim();
-      if (k === key) {
+      if (k.trim() === key) {
         core.info(`Detected CSP Driver installation version ${value}`);
         localSemver = extractSemver(value);
       }
