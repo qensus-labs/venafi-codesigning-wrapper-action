@@ -7245,11 +7245,11 @@ const core = __nccwpck_require__(6024);
 This function we determine the applicable distribution of the Linux operating system and sets the default distribution for other operating systems like Windows and MacOS.
 */
 function getLinuxDistro(currentOs) {
+  let distro = "";
+  let family = "";
   if (currentOs == 'Linux') {
     const debDistrolist = ['ubuntu', 'debian'];
     const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
-    var distro;
-    var family;
     const data = fs.readFileSync('/etc/os-release', 'utf8');
     const lines = data.toString().split('\n');
     const idLine = lines.find(line => line.startsWith('ID='));
@@ -7267,7 +7267,7 @@ function getLinuxDistro(currentOs) {
     distro = 'default';
     family = 'unknown';
   }
-    return {distro, family};
+  return {distro, family};
 }
 
 /*
