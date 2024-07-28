@@ -143,7 +143,7 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
     `
     core.debug(`content: ${content}`);
     await createWinSetupFile(util.format("%s\\%s",tempDir, 'venafi-csp-check-install.ps1'), content);
-    const {exitCode, stdout} = await exec.getExecOutput('powershell', [
+    const {exitCode, stdout, stderr} = await exec.getExecOutput('powershell', [
       "-File",
       `"${tempDir}\venafi-csp-check-install.ps1"`
     ],
@@ -152,7 +152,7 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
       ignoreReturnCode: true
       }
     );
-    core.debug(`ExitCode: ${exitCode} StdOut: ${stdout}`);
+    core.debug(`ExitCode: ${exitCode} StdOut: ${stdout} ErrOut: ${stderr}`);
     if (exitCode == 0) {
       const currentBase = stdout.trim().split('\n');
       core.debug(`currentBase: ${currentBase}`);
