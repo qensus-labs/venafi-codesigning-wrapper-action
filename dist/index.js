@@ -442,7 +442,7 @@ function walkSync(dir, fileList, fileToFind) {
 async function run(currentOs, currentDistro, currentFamily, version) {
   core.info(`Identified '${currentDistro}' for ${currentFamily} ${currentOs}`);
   
-  let cachedPath = await downloadCSPDriver(baseURL, currentOs, currentDistro, version);
+  let cachedPath = await downloadCSPDriver(baseURL, currentOs, currentDistro, currentFamily, version);
 
   if (!process.env["PATH"].startsWith(path.dirname(cachedPath))) {
     core.addPath(path.dirname(cachedPath));
