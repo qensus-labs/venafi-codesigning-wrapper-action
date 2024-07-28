@@ -7267,6 +7267,7 @@ function getLinuxDistro(currentOs) {
     distro = 'default';
     family = 'unknown';
   }
+  core.info(`${distro} ${family}`);
   return {distro, family};
 }
 
@@ -7291,11 +7292,8 @@ async function run() {
     // determine current operating system used by github runner
     const currentOs = os.type();
 
-    // determine current distro and family of the Linux operating system used by the github runner
-    const { currentDistro, currentFamily } = getLinuxDistro(currentOs);
-
     // run the action code
-    await action.run(currentOs, currentDistro, currentFamily, version);
+    await action.run(currentOs, getLinuxDistro(currentOs).distro, getLinuxDistro(currentOs).family, version);
 
     core.info(new Date().toTimeString());
   } catch (error) {
