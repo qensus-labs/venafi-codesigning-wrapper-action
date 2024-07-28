@@ -151,7 +151,7 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
     await createWinSetupFile(util.format("%s\\%s",tempDir, 'venafi-csp-check-install.ps1'), content);
     const {exitCode, stdout, stderr} = await exec.getExecOutput('powershell', [
       "-File",
-      `"${tempDir}\\venafi-csp-check-install.ps1"`
+      `${tempDir}\\venafi-csp-check-install.ps1`
     ],
       {
       silent: true,
