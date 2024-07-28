@@ -7,8 +7,8 @@ const core = require("@actions/core");
 This function we determine the applicable distribution of the Linux operating system and sets the default distribution for other operating systems like Windows and MacOS.
 */
 function getLinuxDistro(currentOs) {
-  let distro = "";
-  let family = "";
+  let currentDistro = "";
+  let currentFamily = "";
   if (currentOs == 'Linux') {
     const debDistrolist = ['ubuntu', 'debian'];
     const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
@@ -16,21 +16,23 @@ function getLinuxDistro(currentOs) {
     const lines = data.toString().split('\n');
     const idLine = lines.find(line => line.startsWith('ID='));
     if (idLine) {
-      distro = idLine.split('=')[1].replace(/^"(.*)"$/, '$1');
-      if (debDistrolist.includes(distro)) {
-        family = 'debian';
+      currentDistro = idLine.split('=')[1].replace(/^"(.*)"$/, '$1');
+      if (debDistrolist.includes(currentDistro)) {
+        currentFamily = 'debian';
       }
-      else if (rhelDistrolist.includes(distro)) {
-        family = 'rhel';
+      else if (rhelDistrolist.includes(currentDistro)) {
+        currentFamily = 'rhel';
+      }
+      else {
+        currentFamily = 'unknown';
       }
     }
   }
   else {
-    distro = 'default';
-    family = 'unknown';
+    currentDistro = 'default';
+    currentFamily = 'default';
   }
-  core.info(`${distro} ${family}`);
-  return {distro, family};
+  return {currentDistro, currentFamily};
 }
 
 /*
@@ -54,8 +56,11 @@ async function run() {
     // determine current operating system used by github runner
     const currentOs = os.type();
 
+     // determine current distro and family of the Linux operating system used by the github runner
+     const { currentDistro, currentFamily } = getLinuxDistro(currentOs);
+
     // run the action code
-    await action.run(currentOs, getLinuxDistro(currentOs).distro, getLinuxDistro(currentOs).family, version);
+    await action.run(currentOs, currentDistro, currentFamily, version);
 
     core.info(new Date().toTimeString());
   } catch (error) {

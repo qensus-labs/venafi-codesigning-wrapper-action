@@ -39,17 +39,6 @@ function extractSemver(version) {
   return semver;
 }
 
-function getOsFamily(currentDistro) {
-  const debDistrolist = ['ubuntu', 'debian'];
-  const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
-  if (debDistrolist.includes(currentDistro)) {
-    return 'debian';
-  }
-  else if (rhelDistrolist.includes(currentDistro)) {
-    return 'rhel';
-  }
-}
-
 async function uninstallCSPDriver(currentOs, currentDistro, installId) {
   //let uninstall = "";
   const debDistrolist = ['ubuntu', 'debian'];
