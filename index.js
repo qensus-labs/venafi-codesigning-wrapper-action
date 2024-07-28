@@ -21,7 +21,7 @@ function getLinuxDistro(currentOs) {
         currentFamily = 'debian';
       }
       else if (rhelDistrolist.includes(currentDistro)) {
-        currentFamily = 'rhel';
+        currentFamily = 'redhat';
       }
       else {
         currentFamily = 'unknown';

@@ -39,19 +39,15 @@ function extractSemver(version) {
   return semver;
 }
 
-async function uninstallCSPDriver(currentOs, currentDistro, installId) {
-  //let uninstall = "";
-  const debDistrolist = ['ubuntu', 'debian'];
-  const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
-
-  if (currentOs == 'Linux' && debDistrolist.includes(currentDistro)) {
+async function uninstallCSPDriver(currentOs, currentDistro, currentFamily, installId) {
+  if (currentOs == 'Linux' && currentFamily == 'debian' ) {
     const {exitCode, stdout}  = await exec.getExecOutput('sudo', ['apt', 'remove', installId, '-y' ], {
       silent: true,
       ignoreReturnCode: true
     });
     core.debug(`removal: exitcode[${exitCode}] with stdout: ${stdout} }`);
   }
-  else if (currentOs == 'Linux' && rhelDistrolist.includes(currentDistro)) {
+  else if (currentOs == 'Linux' && currentFamily == 'redhat' ) {
     const {exitCode, stdout}  = await exec.getExecOutput('sudo', ['yum', 'remove', installId, '-y' ], {
       silent: true,
       ignoreReturnCode: true
@@ -77,15 +73,13 @@ async function uninstallCSPDriver(currentOs, currentDistro, installId) {
 
 
 // Function to check currentBase of the installation and if needed trigger a reinstall
-async function checkCSPDriverSetup(currentOs, currentDistro, version) {
-  const debDistrolist = ['ubuntu', 'debian'];
-  const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
+async function checkCSPDriverSetup(currentOs, currentDistro, currentFamily, version) {
   const semver = extractSemver(version);
   let localSemver = "";
   let reinstall = true ;
   let installId = "venaficodesign" ;
 
-  if (currentOs == 'Linux' && debDistrolist.includes(currentDistro)) {
+  if (currentOs == 'Linux' && currentFamily == 'debian' ) {
     const {exitCode, stdout} = await exec.getExecOutput('sudo', ['apt', 'show', installId], {
       silent: true,
       ignoreReturnCode: true
@@ -114,7 +108,7 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
     }
     
   }
-  else if (currentOs == 'Linux' && rhelDistrolist.includes(currentDistro)) {
+  else if (currentOs == 'Linux' && currentFamily == 'redhat' ) {
     const {exitCode, stdout} = await exec.getExecOutput('sudo', ['yum', 'info', installId], {
       silent: true,
       ignoreReturnCode: true
@@ -197,10 +191,8 @@ async function checkCSPDriverSetup(currentOs, currentDistro, version) {
   return { reinstall, installId };
 }
 
-// Supported distro names are 'rhel','centos', 'rocky', 'ubuntu', 'amzn', 'fedora', 'debian' and 'ol'.
-async function installCSPDriverPackage(cachedToolPath, packageName, currentOs, currentDistro) {
-  const debDistrolist = ['ubuntu', 'debian'];
-  const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
+// Supported family is debian or redhat based.
+async function installCSPDriverPackage(cachedToolPath, packageName, currentOs, currentDistro, currentFamily) {
   var packageInstaller;
   var result = "";
   const options = {
@@ -209,11 +201,11 @@ async function installCSPDriverPackage(cachedToolPath, packageName, currentOs, c
     }
   }
 
-  if (currentOs == 'Linux' && debDistrolist.includes(currentDistro)) {
+  if (currentOs == 'Linux' && currentFamily == 'debian' ) {
     packageInstaller = 'dpkg'
     await exec.exec('sudo', [packageInstaller, '-i', util.format("%s/%s",cachedToolPath, packageName) ], options );
   }
-  else if (currentOs == 'Linux' && rhelDistrolist.includes(currentDistro)) {
+  else if (currentOs == 'Linux' && currentFamily == 'redhat' ) {
     packageInstaller = 'rpm'
     await exec.exec('sudo', [packageInstaller, '-Uvh', util.format("%s/%s",cachedToolPath, packageName) ], options );
   }
@@ -264,22 +256,20 @@ async function setCSPDriverDefaultConfig(currentOs, cachedPath, authURL, hsmURL)
 
 // Returns an object with the URL and savefile used to download a specific version of the CSP Driver (either PKCS11 for Linux or CSP for Windows) for a
 // specific operating system, distribution and architecture. 
-// Supported distro names are 'rhel','centos', 'rocky', 'ubuntu', 'amzn', 'fedora', 'debian' and 'ol'.
-function getCSPDriverDownloadInfo(baseURL, currentOs, currentDistro, version) {
+// Supported family is debian or redhat based.
+function getCSPDriverDownloadInfo(baseURL, currentOs, currentDistro, currentFamily, version) {
   var url = "";
   var file = "";
-  const debDistrolist = ['ubuntu', 'debian'];
-  const rhelDistrolist = ['rhel', 'centos', 'rocky', 'amzn', 'fedora', 'ol'];
-  if (currentOs == 'Linux' && debDistrolist.includes(currentDistro) && architecture == 'intel') {
+  if (currentOs == 'Linux' && currentFamily == 'debian' && architecture == 'intel') {
     file = `venafi-csc-latest-x86_64.deb`;
   }
-  else if (currentOs == 'Linux' && debDistrolist.includes(currentDistro) && architecture == 'arm') {
+  else if (currentOs == 'Linux' && currentFamily == 'debian' && architecture == 'arm') {
     file = `venafi-csc-latest-aarch64.deb`;
   }
-  else if (currentOs == 'Linux' && rhelDistrolist.includes(currentDistro) && architecture == 'intel') {
+  else if (currentOs == 'Linux' && currentFamily == 'redhat' && architecture == 'intel') {
     file = `venafi-csc-latest-x86_64.rpm`;
   }
-  else if (currentOs == 'Linux' && rhelDistrolist.includes(currentDistro) && architecture == 'arm') {
+  else if (currentOs == 'Linux' && currentFamily == 'redhat' && architecture == 'arm') {
     file = `venafi-csc-latest-aarch64.rpm`;
   }   
   else if (currentOs == 'Windows_NT' && currentDistro == 'default' && architecture == 'intel') {
@@ -307,18 +297,18 @@ function getCSPDriverDownloadInfo(baseURL, currentOs, currentDistro, version) {
 }
 
 // Downloads and installs the package to the runner and returns the path.
-async function downloadCSPDriver(baseURL, currentOs, currentDistro, version) {
+async function downloadCSPDriver(baseURL, currentOs, currentDistro, currentFamily, version) {
   // Do we have the package installed and which version?
   // Do we need to replace or skip
-  const { reinstall, installId }  = await checkCSPDriverSetup(currentOs, currentDistro, version);
+  const { reinstall, installId }  = await checkCSPDriverSetup(currentOs, currentDistro, currentFamily, version);
   core.debug(`reinstall: ${reinstall}`);
   
   if (reinstall) {
-    await uninstallCSPDriver(currentOs, currentDistro, installId);
+    await uninstallCSPDriver(currentOs, currentDistro, currentFamily, installId);
   }
 
   // Generate all information for the CSPDriver Download specification
-  const download = getCSPDriverDownloadInfo(baseURL,currentOs,currentDistro, version);
+  const download = getCSPDriverDownloadInfo(baseURL,currentOs,currentDistro, currentFamily, version);
 
   // See if we have cached this tool already
   let cachedToolPath = tc.find(toolName, version);
@@ -370,7 +360,7 @@ async function downloadCSPDriver(baseURL, currentOs, currentDistro, version) {
   
   // Now that we have the install package let's installl this for the currentOs + distribution
   if (reinstall) {
-    var setupPackage = await installCSPDriverPackage(cachedToolPath, download.setupfile, currentOs, currentDistro);
+    var setupPackage = await installCSPDriverPackage(cachedToolPath, download.setupfile, currentOs, currentDistro, currentFamily);
     core.debug(`Installation results: ${setupPackage}`);
   }
 
