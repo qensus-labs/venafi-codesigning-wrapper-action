@@ -73,120 +73,80 @@ async function uninstallCSPDriver(currentOs, currentDistro, currentFamily, insta
 async function checkCSPDriverSetup(currentOs, currentDistro, currentFamily, version) {
   const semver = extractSemver(version);
   let localSemver = "";
-  let reinstall = true ;
-  let installId = "venaficodesign" ;
+  let reinstall = true;
+  let installId = "venaficodesign";
 
-  if (currentOs == 'Linux' && currentFamily == 'debian' ) {
-    const {exitCode, stdout} = await exec.getExecOutput('sudo', ['apt', 'show', installId], {
+  const execCheck = async (command, args) => {
+    const { exitCode, stdout, stderr } = await exec.getExecOutput(command, args, {
       silent: true,
       ignoreReturnCode: true
     });
-    core.debug(`ExitCode: ${exitCode}`);
-    if (exitCode == 0) {
-      const currentBase = stdout.trim().split('\n');
-      core.debug(`currentBase: ${stdout}`);
+    core.debug(`ExitCode: ${exitCode} StdOut: ${stdout} ${stderr ? `ErrOut: ${stderr}` : ''}`);
+    return { exitCode, stdout };
+  };
 
-      // Use forEach to add each element to the object
-      currentBase.forEach(item => {
-        const [key, ...valueParts] = item.toLowerCase().trim().split(':');
-        const value = valueParts.join(':').trim();
-        if (key == 'version') {
-          core.info(`Detected CSP Driver installation version ${value}`);
-          localSemver = extractSemver(value);
-        }   
-      });
-      if (localSemver.match(semver)) {
-        core.info(`Matched CSP Driver semantic version ${localSemver}`);
-        reinstall = false;
+  const parseOutput = (stdout, key) => {
+    const lines = stdout.trim().split('\n');
+    lines.forEach(item => {
+      const [k, ...vParts] = item.toLowerCase().trim().split(':');
+      const value = vParts.join(':').trim();
+      if (k === key) {
+        core.info(`Detected CSP Driver installation version ${value}`);
+        localSemver = extractSemver(value);
       }
-    }
-    else {
-      core.info(`Detected no CSP Driver installation`);
-    }
-    
-  }
-  else if (currentOs == 'Linux' && currentFamily == 'redhat' ) {
-    const {exitCode, stdout} = await exec.getExecOutput('sudo', ['yum', 'info', installId], {
-      silent: true,
-      ignoreReturnCode: true
     });
-    core.debug(`ExitCode: ${exitCode}`);
-    if (exitCode == 0) {
-      const currentBase = stdout.trim().split('\n');
-      core.debug(`currentBase: ${stdout}`);
+  };
 
-      // Use forEach to add each element to the object
-      currentBase.forEach(item => {
-        const [key, ...valueParts] = item.toLowerCase().trim().split(':');
-        const value = valueParts.join(':').trim();
-        if (key.trim() == 'version') {
-          core.info(`Detected CSP Driver installation version ${value}`);
-          localSemver = extractSemver(value);
+  if (currentOs === 'Linux') {
+    const commandArgs = currentFamily === 'debian' 
+      ? ['apt', 'show', installId] 
+      : currentFamily === 'redhat' 
+      ? ['yum', 'info', installId] 
+      : null;
+
+    if (commandArgs) {
+      const { exitCode, stdout } = await execCheck('sudo', commandArgs);
+      if (exitCode === 0) {
+        parseOutput(stdout, 'version');
+        if (localSemver.match(semver)) {
+          core.info(`Matched CSP Driver semantic version ${localSemver}`);
+          reinstall = false;
         }
-      });
-      if (localSemver.match(semver)) {
-        core.info(`Matched CSP Driver semantic version ${localSemver}`);
-        reinstall = false;
+      } else {
+        core.info(`Detected no CSP Driver installation`);
       }
     }
-    else {
-      core.info(`Detected no CSP Driver installation`);
-    }
-
-  }
-  else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
-    const content = `
-    Get-ChildItem -Path HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\ | Get-ItemProperty | Select-Object DisplayName, DisplayVersion, UninstallString |  Where-Object {($_.DisplayName -like "*Venafi*Code*Signing*")} | Format-List
-    `
-    core.debug(`content: ${content}`);
-    await createFile(util.format("%s\\%s",tempDir, 'venafi-csp-check-install.ps1'), content);
-    const {exitCode, stdout, stderr} = await exec.getExecOutput('powershell', [
+  } else if (currentOs === 'Windows_NT' && currentDistro === 'default') {
+    const script = `
+      Get-ChildItem -Path HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\ |
+      Get-ItemProperty | Select-Object DisplayName, DisplayVersion, UninstallString |
+      Where-Object {($_.DisplayName -like "*Venafi*Code*Signing*")} | Format-List
+    `;
+    core.debug(`content: ${script}`);
+    await createFile(`${tempDir}\\venafi-csp-check-install.ps1`, script);
+    const { exitCode, stdout, stderr } = await execCheck('powershell', [
       "-File",
       `${tempDir}\\venafi-csp-check-install.ps1`
-    ],
-      {
-      silent: true,
-      ignoreReturnCode: true
+    ]);
+    if (exitCode === 0) {
+      parseOutput(stdout, 'displayversion');
+      if (localSemver.match(semver)) {
+        core.info(`Matched CSP Driver semantic version ${localSemver}`);
+        reinstall = false;
       }
-    );
-    core.debug(`ExitCode: ${exitCode} StdOut: ${stdout} ErrOut: ${stderr}`);
-    if (exitCode == 0) {
-      const currentBase = stdout.trim().split('\n');
-      core.debug(`currentBase: ${currentBase}`);
-
-      // Use forEach to add each element to the object
-      currentBase.forEach(item => {
-        const [key, ...valueParts] = item.toLowerCase().trim().split(':');
-        const value = valueParts.join(':').trim();
-        if (key.trim() == 'displayversion') {
-          core.info(`Detected CSP Driver installation version ${value}`);
-          localSemver = extractSemver(value);
-        }
-        else if (key.trim() == 'uninstallstring') {
-          installId = value.match(/\{[0-9A-Fa-f\-]+\}/);
-        }
-
-      });
-    if (localSemver.match(semver)) {
-      core.info(`Matched CSP Driver semantic version ${localSemver}`);
-      reinstall = false;
+      const match = stdout.match(/\{[0-9A-Fa-f\-]+\}/);
+      if (match) installId = match[0];
     }
-    }
-    
-  }
-  else if (currentOs == 'Darwin' && currentDistro == 'default') {
+  } else if (currentOs === 'Darwin' && currentDistro === 'default') {
     // Requires some work
-  }
-  else {
+  } else {
     console.log('Unsupported operating system or distribution detected');
   }
 
-  if (reinstall) {
-    core.debug(`reinstall: ${reinstall}`);
-  }
-
+  core.debug(`reinstall: ${reinstall}`);
   return { reinstall, installId };
 }
+
 
 // Supported family is debian or redhat based.
 async function installCSPDriverPackage(cachedToolPath, packageName, currentOs, currentDistro, currentFamily) {
