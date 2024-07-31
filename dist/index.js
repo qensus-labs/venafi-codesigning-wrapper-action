@@ -238,7 +238,7 @@ function getPackageInfo(baseURL, currentOs, currentDistro, currentFamily, archit
 }
 
 // Function which is the core for downloading and caching the initial package. Additional it is the umbrella for other functions.
-async function downloadVenafiCSP(tempDir, baseURL, toolName, currentOs, currentDistro, currentFamily, architecture, version) {
+async function downloadVenafiCSP(tempDir, toolName, baseURL, currentOs, currentDistro, currentFamily, architecture, version) {
   
   // Initial setup or already installed with the correct version?
   const { reinstall, installId }  = await checkVenafiCSP(tempDir, currentOs, currentDistro, currentFamily, version);
@@ -373,7 +373,7 @@ function walkSync(dir, fileList, fileToFind) {
 async function run(tempDir, toolName, version, baseURL, authURL, hsmURL, currentOs, currentDistro, currentFamily, architecture) {
   core.info(`Identified '${currentDistro}' for ${currentFamily} ${currentOs}`);
   
-  let cachedPath = await downloadVenafiCSP(tempDir,toolName, baseURL, currentOs, currentDistro, currentFamily, architecture, version);
+  let cachedPath = await downloadVenafiCSP(tempDir, toolName, baseURL, currentOs, currentDistro, currentFamily, architecture, version);
 
   if (!process.env["PATH"].startsWith(path.dirname(cachedPath))) {
     core.addPath(path.dirname(cachedPath));
