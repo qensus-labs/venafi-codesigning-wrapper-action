@@ -3,9 +3,24 @@ const fs = require("fs");
 const action = require("./action");
 const core = require("@actions/core");
 
-/*
-This function we determine the applicable distribution of the Linux operating system and sets the default distribution for other operating systems like Windows and MacOS.
-*/
+// Variable from Github to asign.
+const tempDir = process.env['RUNNER_TEMP'];
+
+// The name of the tool we are installing with this action, which is 'Venafi Code Sign Protect'
+const toolName = "Venafi_CSP";
+
+// The architecture of the system to install the package on. Most scenarios 'intel' is applicable.
+const architecture = core.getInput('architecture');
+
+// Base form of the the URL to download the release archives. As long as this
+// does not change this will be able to download any version the CLI. Additional we request both Auth and HSML URL.
+const baseURL = core.getInput('tpp-csc-url') + '/clients';
+
+const authURL = core.getInput('tpp-auth-url');
+
+const hsmURL = core.getInput('tpp-hsm-url');
+
+// This function we determine the applicable distribution of the Linux operating system and sets the default distribution for other operating systems like Windows and MacOS.
 function getLinuxDistro(currentOs) {
   let currentDistro = "";
   let currentFamily = "";
@@ -60,7 +75,7 @@ async function run() {
      const { currentDistro, currentFamily } = getLinuxDistro(currentOs);
 
     // run the action code
-    await action.run(currentOs, currentDistro, currentFamily, version);
+    await action.run(tempDir, toolName, version, baseURL, authURL, hsmURL, currentOs, currentDistro, currentFamily, architecture);
 
     core.info(new Date().toTimeString());
   } catch (error) {

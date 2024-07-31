@@ -5,23 +5,6 @@ const core = require("@actions/core");
 const tc = require("@actions/tool-cache");
 const exec = require("@actions/exec");
 
-// Variable from Github to asign.
-const tempDir = process.env['RUNNER_TEMP'];
-
-// The name of the tool we are installing with this action, which is 'Venafi Code Sign Protect'
-const toolName = "Venafi_CSP";
-
-// The architecture of the system to install the package on. Most scenarios 'intel' is applicable.
-const architecture = core.getInput('architecture');
-
-// Base form of the the URL to download the release archives. As long as this
-// does not change this will be able to download any version the CLI.
-const baseURL = core.getInput('tpp-csc-url') + '/clients';
-
-const authURL = core.getInput('tpp-auth-url');
-
-const hsmURL = core.getInput('tpp-hsm-url');
-
 // Util to create a file with certain content to execute, such as a script. File can be temporary or static.
 async function createFile(filePath, content) {
   try {
@@ -67,7 +50,7 @@ async function removeVenafiCSP(currentOs, currentDistro, currentFamily, installI
 }
 
 // Function to check if a current Venafi_CSP installation exists, checks current installation version, and if needed trigger a reinstall.
-async function checkVenafiCSP(currentOs, currentDistro, currentFamily, version) {
+async function checkVenafiCSP(tempDir, currentOs, currentDistro, currentFamily, version) {
   const semver = extractSemver(version);
   let localSemver = "";
   let reinstall = true;
@@ -203,7 +186,7 @@ async function setDefaultParams(currentOs, cachedPath, authURL, hsmURL) {
 
 
 // Function too get the package related information and returns it in a formatted way.
-function getPackageInfo(baseURL, currentOs, currentDistro, currentFamily, version) {
+function getPackageInfo(baseURL, currentOs, currentDistro, currentFamily, architecture, version) {
   var url = "";
   var file = "";
   if (currentOs == 'Linux' && currentFamily == 'debian' && architecture == 'intel') {
@@ -243,7 +226,7 @@ function getPackageInfo(baseURL, currentOs, currentDistro, currentFamily, versio
 }
 
 // Function which is the core for downloading and caching the initial package. Additional it is the umbrella for other functions.
-async function downloadVenafiCSP(baseURL, currentOs, currentDistro, currentFamily, version) {
+async function downloadVenafiCSP(baseURL, toolName, currentOs, currentDistro, currentFamily, architecture, version) {
   
   // Initial setup or already installed with the correct version?
   const { reinstall, installId }  = await checkVenafiCSP(currentOs, currentDistro, currentFamily, version);
@@ -254,7 +237,7 @@ async function downloadVenafiCSP(baseURL, currentOs, currentDistro, currentFamil
   }
 
   // Generate all information for the Venafi_CSP downloadTool.
-  const download = getPackageInfo(baseURL,currentOs,currentDistro, currentFamily, version);
+  const download = getPackageInfo(baseURL,currentOs,currentDistro, currentFamily, architecture, version);
 
   // Maybe the Venafi_CSP package is already cached?
   let cachedToolPath = tc.find(toolName, version);
@@ -375,10 +358,10 @@ function walkSync(dir, fileList, fileToFind) {
 }
 
 // The main function of this action. It hooks the actual setup Venafi_CSP functions to more configuration functions.
-async function run(currentOs, currentDistro, currentFamily, version) {
+async function run(tempDir, toolName, version, baseURL, authURL, hsmURL, currentOs, currentDistro, currentFamily, architecture) {
   core.info(`Identified '${currentDistro}' for ${currentFamily} ${currentOs}`);
   
-  let cachedPath = await downloadVenafiCSP(baseURL, currentOs, currentDistro, currentFamily, version);
+  let cachedPath = await downloadVenafiCSP(tempDir,toolName, baseURL, currentOs, currentDistro, currentFamily, architecture, version);
 
   if (!process.env["PATH"].startsWith(path.dirname(cachedPath))) {
     core.addPath(path.dirname(cachedPath));
