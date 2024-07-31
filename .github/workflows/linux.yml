@@ -9,7 +9,7 @@ jobs:
     steps:
       - name: Setup CSPDriver
         id: cspdriver
-        uses: qensus-labs/venafi-codesigning-wrapper-action@v1.0.0
+        uses: qensus-labs/venafi-codesigning-wrapper-action@v0.6.1
         with:
           tpp-csc-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/csc'
           tpp-auth-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth'
