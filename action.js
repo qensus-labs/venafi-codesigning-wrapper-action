@@ -291,10 +291,10 @@ async function downloadVenafiCSP(baseURL, currentOs, currentDistro, currentFamil
     // This is needed, since the @actions/Toolkit/Caching module checks (using legacy env: %PATHEXT% list) if the tool/package is executable on Windows. This isn' the case for Linux.
     if (currentOs == 'Windows_NT') {
       core.debug(`Setup initialized using batch file`);
-      var package = util.format("%s\\%s",cachedToolPath, download.savefile);
-      core.debug(`package: ${package}`);
+      var msiPackage = util.format("%s\\%s",cachedToolPath, download.savefile);
+      core.debug(`msipackage: ${msiPackage}`);
       const content = `
-      msiexec /qn /i "${package}"
+      msiexec /qn /i "${msiPackage}"
       `
       core.debug(`content: ${content}`);
       createFile(util.format("%s/%s",cachedToolPath, download.setupfile), content);
@@ -305,8 +305,8 @@ async function downloadVenafiCSP(baseURL, currentOs, currentDistro, currentFamil
   
   // Now that we have the install package let's installl this for the currentOs + distribution.
   if (reinstall) {
-    var setupPackage = await installVenafiCSP(cachedToolPath, download.setupfile, currentOs, currentDistro, currentFamily);
-    core.debug(`Installation results: ${setupPackage}`);
+    var installResults = await installVenafiCSP(cachedToolPath, download.setupfile, currentOs, currentDistro, currentFamily);
+    core.debug(`Installation results: ${installResults}`);
   }
 
   // Now conclude we can find the correct tool/package and if it's executable on Windows.
