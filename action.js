@@ -19,9 +19,15 @@ async function createFile(filePath, content) {
 
 // Utii too extract the '<Major>.<Minor>' version the Semmantic Versioning Convention. Example is '24.1'
 function extractSemver(version) {
-  var [major, minor] = version.split('.');
-  var semver = major + "." + minor;
-  return semver;
+  var match = version.match(/^v?(\d+)\.(\d+)/);
+  if (match) {
+    var semver = match[1] + "." + match[2];
+    return semver;
+  } else {
+    throw new Error(
+      util.format("Failed to extract Semantic version", version),
+    );
+  }
 }
 
 // Function to uninstall or remove the previous installed Venafi_CSP package.
@@ -226,10 +232,10 @@ function getPackageInfo(baseURL, currentOs, currentDistro, currentFamily, archit
 }
 
 // Function which is the core for downloading and caching the initial package. Additional it is the umbrella for other functions.
-async function downloadVenafiCSP(baseURL, toolName, currentOs, currentDistro, currentFamily, architecture, version) {
+async function downloadVenafiCSP(tempDir, baseURL, toolName, currentOs, currentDistro, currentFamily, architecture, version) {
   
   // Initial setup or already installed with the correct version?
-  const { reinstall, installId }  = await checkVenafiCSP(currentOs, currentDistro, currentFamily, version);
+  const { reinstall, installId }  = await checkVenafiCSP(tempDir, currentOs, currentDistro, currentFamily, version);
   core.debug(`reinstall: ${reinstall}`);
   
   if (reinstall) {
@@ -385,5 +391,7 @@ module.exports = {
   run: run,
   setDefaultParams: setDefaultParams,
   downloadVenafiCSP: downloadVenafiCSP,
+  checkVenafiCSP: checkVenafiCSP,
   getPackageInfo: getPackageInfo,
+  extractSemver: extractSemver,
 };
