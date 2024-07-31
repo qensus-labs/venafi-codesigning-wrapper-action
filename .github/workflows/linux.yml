@@ -37,7 +37,7 @@ jobs:
           javac Foo.java
           jar -cf foo.jar Foo.class
       - name: Store the foo.jar artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: foo.jar
           path: foo.jar

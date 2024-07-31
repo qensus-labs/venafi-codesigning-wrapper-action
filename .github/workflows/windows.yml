@@ -30,7 +30,7 @@ jobs:
         run: |
           copy C:\Windows\System32\Notepad.exe foo.exe
       - name: Store the foo.exe artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: foo.exe
           path: foo.exe
@@ -65,3 +65,12 @@ jobs:
           INPUT_PATH: foo.exe
           CERTIFICATE_SUBJECT_NAME: signer
           TIMESTAMPING_SERVERS: http://timestamp.digicert.com
+      - name: Verify artifact with signtool
+        shell: cmd
+        run: python -mvenafi_csp.signtool_verify_command
+        env:
+          TPP_AUTH_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth'
+          TPP_HSM_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
+          TPP_USERNAME: signer
+          TPP_PASSWORD: ${{ secrets.TPP_PASSWORD }}
+          INPUT_PATH: foo.exe
