@@ -120,7 +120,7 @@ async function checkVenafiCSP(tempDir, currentOs, currentDistro, currentFamily, 
         core.info(`Matched CSP Driver semantic version ${localSemver}`);
         reinstall = false;
       }
-      const match = stdout.match(/\{[0-9A-Fa-f\-]+\}/);
+      const match = stdout.match(/\{[0-9A-Fa-f-]+\}/);
       if (match) installId = match[0];
     }
   } else if (currentOs === 'Darwin' && currentDistro === 'default') {
