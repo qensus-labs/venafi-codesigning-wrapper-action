@@ -1,0 +1,75 @@
+on:
+  workflow_dispatch:
+
+jobs:
+  github_hosted_example_job:
+    # runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
+    name: Example with github hosted runner
+    steps:
+      - name: Setup CSPDriver
+        id: cspdriver
+        uses: qensus-labs/venafi-codesigning-wrapper-action@v0.6.1
+        with:
+          tpp-csc-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/csc'
+          tpp-auth-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth'
+          tpp-hsm-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
+          include-config: 'false'
+      - name: Display output values
+        run: |
+          echo "Output \"csp-driver-cached-config\" [${{steps.cspdriver.outputs.csp-driver-cached-config}}]"
+          echo "Output \"csp-driver-cached-path\" [${{steps.cspdriver.outputs.csp-driver-cached-path}}]"
+          echo "Output \"csp-driver-cached-version\" [${{steps.cspdriver.outputs.csp-driver-cached-version}}]"
+      - name: Check CSPDriver (version)
+        run: |
+          pkcs11config --version
+        # pkcs11config trace --file=tracing.out --output=stdout
+      - name: Setup Java SDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'oracle' # See 'Supported distributions' for available options
+          java-version: '21'
+      - name: Show JarSigner version
+        run: jarsigner -version
+      - name: Build foo.jar
+        run: |
+          echo 'public class Foo { public static void main() { } }' > Foo.java
+          javac Foo.java
+          jar -cf foo.jar Foo.class
+      - name: Store the foo.jar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: foo.jar
+          path: foo.jar
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          # cache: 'pip' # caching pip dependencies requires requirements.txt
+      - name: Install Venafi Python package
+        run: pip install venafi-csp
+      - name: Run Library command
+        run: python -mvenafi_csp.version_command
+      - name: Sign artifact with JarSigner
+        run: python -mvenafi_csp.jarsigner_sign_command
+        env:
+          TPP_AUTH_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth'
+          TPP_HSM_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
+          TPP_USERNAME: signer
+          TPP_PASSWORD: ${{ secrets.TPP_PASSWORD }}
+          INPUT_PATH: foo.jar
+          CERTIFICATE_LABEL: github-signer-development-codesigner
+      - name: Store the foo.jar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: foo-signed.jar
+          path: foo.jar
+      - name: verify artifact with JarSigner
+        run: python -mvenafi_csp.jarsigner_verify_command
+        env:
+          TPP_AUTH_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth'
+          TPP_HSM_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
+          TPP_USERNAME: signer
+          TPP_PASSWORD: ${{ secrets.TPP_PASSWORD }}
+          INPUT_PATH: foo.jar
+          CERTIFICATE_LABEL: github-signer-development-codesigner
