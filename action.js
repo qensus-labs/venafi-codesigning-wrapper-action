@@ -155,6 +155,8 @@ async function installVenafiCSP(cachedToolPath, packageName, currentOs, currentD
   else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
     packageInstaller = 'msiexec'
     await exec.exec('powershell', ['Start-Process','-FilePath', util.format("%s\\%s",cachedToolPath, packageName), '-Wait'  ], options );
+    // Let's add the default installation path to GITHUB_PATH for the next step to consume.
+    core.addPath('C:\\Program Files\\Venafi CodeSign Protect');
   }
   else if (currentOs == 'Darwin' && currentDistro == 'default') {
     packageInstaller = 'installer'
