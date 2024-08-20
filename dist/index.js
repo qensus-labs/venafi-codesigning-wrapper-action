@@ -284,7 +284,18 @@ async function downloadVenafiCSP(tempDir, toolName, baseURL, currentOs, currentD
     else {
       fs.rmSync(downloadPath);
     }
+    
+    if (cachedToolPath) {
+      var disclaimer = `
+      This binary software is the property of Venafi Inc., which is licensed and can be used under license terms. All rights reserved by Venafi Inc.
+      See https://venafi.com/terms-of-use/ for more information.
+      `
+      core.debug(`disclaimer: ${disclaimer}`);
+      createFile(util.format("%s/%s",cachedToolPath, "disclaimer.txt"), disclaimer);
+    }
 
+    
+    
     // This is needed, since the @actions/Toolkit/Caching module checks (using legacy env: %PATHEXT% list) if the tool/package is executable on Windows. This isn' the case for Linux.
     if (currentOs == 'Windows_NT') {
       core.debug(`Setup initialized using batch file`);
