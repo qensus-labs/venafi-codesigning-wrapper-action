@@ -27,13 +27,13 @@ The following optional inputs:
 
 | Input | Description |
 | --- | --- |
-| `tpp-csc-url` | Venafi CodeSign Protect client Download page, which defaults to `https://localhost/csc` for local development. |
-| `tpp-version` | Venafi CodeSign Protect version, which defaults to `24.1.0`, our latest tested version. |
-| `tpp-auth-url` | Trust Protection Platform authentication server URL, which defaults to `https://localhost/vedauth` for local development. |
-| `tpp-hsm-url` | Trust Protection Platform virtual HSM URL, which defaults to `https://localhost/vedhsm` for local development. |
+| `venafi-csc-url` | Venafi CodeSign Protect client Download page, which defaults to `https://localhost/csc` for local development. |
+| `venafi-version` | Venafi CodeSign Protect version, which defaults to `24.1.0`, our latest tested version. |
+| `venafi-auth-url` | Trust Protection Platform authentication server URL, which defaults to `https://localhost/vedauth` for local development. |
+| `venafi-hsm-url` | Trust Protection Platform virtual HSM URL, which defaults to `https://localhost/vedhsm` for local development. |
 | `include-config` | Does an initial `set-url` to set the authentication server and virtual HSM URLs, which defaults to `false` for local development. |
-| `tpp-user` | The login `username` that has privileges to properly execute `signing` operations, which defaults to `signer` and can be overwritten when needed. |
-| `tpp-password` | The `password` associated with the login username. The latter is useful for storing the password in a Github Secret, which can be accessed through a variable. |
+| `venafi-user` | The login `username` that has privileges to properly execute `signing` operations, which defaults to `signer` and can be overwritten when needed. |
+| `venafi-password` | The `password` associated with the login username. The latter is useful for storing the password in a Github Secret, which can be accessed through a variable. |
 
 *Note: Don't forget to register the `password` as **Github Secret**.*
 
@@ -91,12 +91,12 @@ jobs:
       - name: Setup CSPDriver
         uses: qensus-labs/venafi-codesigning-wrapper-action@v1.0.0
         with:
-          tpp-version: '24.1.0'
-          tpp-csc-url: 'https://my-tpp/csc'
-          tpp-auth-url: 'https://my-tpp/vedauth'
-          tpp-hsm-url: 'https://my-tpp/vedhsm'
+          venafi-version: '24.1.0'
+          venafi-csc-url: 'https://my-tpp/csc'
+          venafi-auth-url: 'https://my-tpp/vedauth'
+          venafi-hsm-url: 'https://my-tpp/vedhsm'
           include-config: 'true'
-          tpp-user: 'signer'
+          venafi-user: 'signer'
       - name: Check CSPDriver (version)
         run: pkcs11config --version
 ```
@@ -135,10 +135,10 @@ jobs:
         id: cspdriver
         uses: qensus-labs/venafi-codesigning-wrapper-action@v1.0.0
         with:
-          tpp-version: '24.1.0'
-          tpp-csc-url: 'https://my-tpp/csc'
-          tpp-auth-url: 'https://my-tpp/vedauth'
-          tpp-hsm-url: 'https://my-tpp/vedhsm'
+          venafi-version: '24.1.0'
+          venafi-csc-url: 'https://my-tpp/csc'
+          venafi-auth-url: 'https://my-tpp/vedauth'
+          venafi-hsm-url: 'https://my-tpp/vedhsm'
           include-config: 'true'
       - name: Display output values
         run: |
@@ -199,10 +199,10 @@ jobs:
         id: cspdriver
         uses: qensus-labs/venafi-codesigning-wrapper-action@v1.0.0
         with:
-          tpp-version: '24.1.0'
-          tpp-csc-url: 'https://my-tpp/csc'
-          tpp-auth-url: 'https://my-tpp/vedauth'
-          tpp-hsm-url: 'https://my-tpp/vedhsm'
+          venafi-version: '24.1.0'
+          venafi-csc-url: 'https://my-tpp/csc'
+          venafi-auth-url: 'https://my-tpp/vedauth'
+          venafi-hsm-url: 'https://my-tpp/vedhsm'
           include-config: 'true'
       - name: Display output values
         run: |

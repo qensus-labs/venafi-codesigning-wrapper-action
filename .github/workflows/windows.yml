@@ -8,11 +8,11 @@ jobs:
     steps:
       - name: Setup CSPDriver
         id: cspdriver
-        uses: qensus-labs/venafi-codesigning-wrapper-action@v0.6.1
+        uses: qensus-labs/venafi-codesigning-wrapper-action@v0.9.1
         with:
-          tpp-csc-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/csc'
-          tpp-auth-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth'
-          tpp-hsm-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
+          venafi-csc-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/csc'
+          venafi-auth-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth'
+          venafi-hsm-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
           include-config: 'false'
       - name: Display output values
         run: |

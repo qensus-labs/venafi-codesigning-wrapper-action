@@ -14,11 +14,11 @@ const architecture = core.getInput('architecture');
 
 // Base form of the the URL to download the release archives. As long as this
 // does not change this will be able to download any version the CLI. Additional we request both Auth and HSML URL.
-const baseURL = core.getInput('tpp-csc-url') + '/clients';
+const baseURL = core.getInput('venafi-csc-url') + '/clients';
 
-const authURL = core.getInput('tpp-auth-url');
+const authURL = core.getInput('venafi-auth-url');
 
-const hsmURL = core.getInput('tpp-hsm-url');
+const hsmURL = core.getInput('venafi-hsm-url');
 
 // This function we determine the applicable distribution of the Linux operating system and sets the default distribution for other operating systems like Windows and MacOS.
 function getLinuxDistro(currentOs) {
@@ -62,7 +62,7 @@ This is how the action is used:
 async function run() {
   try {
     // Get the users input of the with
-    const version = core.getInput("tpp-version");
+    const version = core.getInput("venafi-version");
     core.info(`Installing CSP Driver version ${version}...`);
 
     // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
