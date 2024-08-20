@@ -394,4 +394,5 @@ module.exports = {
   checkVenafiCSP: checkVenafiCSP,
   getPackageInfo: getPackageInfo,
   extractSemver: extractSemver,
+  createFile: createFile,
 };

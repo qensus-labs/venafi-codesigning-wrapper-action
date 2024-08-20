@@ -56,6 +56,33 @@ describe("run", () => {
     // Assert
     expect(downloadTool).toHaveBeenCalledTimes(1);
   });
+
+  test("should cache the MSI Installer package & setup script for Windows_NT", async () => {
+    jest.spyOn(tc, "find").mockReturnValue(undefined);
+    jest.spyOn(exec, "getExecOutput").mockReturnValue({ exitCode:1, stdout: '', stderr: '' });
+    let downloadTool = jest.spyOn(tc, "downloadTool").mockReturnValue("venafi-csc-24.1.0-x86_64.msi");
+    jest.spyOn(tc, "cacheFile").mockReturnValue("/home/sysadmin/actions-runner/_work/_tool/Venafi_CSP/24.1.0/x64/");
+    jest.spyOn(fs, "rmSync").mockReturnValue();
+    jest.spyOn(exec, "exec").mockReturnValue({ exitCode:0, stdout: '', stderr: '' });;
+    jest.spyOn(fs, "chmodSync").mockReturnValue(undefined);
+    jest.spyOn(fs, "writeFileSync").mockReturnValue({});
+    jest.spyOn(fs, "readdirSync").mockReturnValue(["venafi-csc-24.1.0-x86_64.bat"]);
+    jest.spyOn(fs, "statSync").mockReturnValue({
+      isDirectory: () => {
+        false;
+      },
+    });
+    
+    // Act
+    await action.run("C:\temp", "Venafi_CSP", "24.1.0", "https://localhost/csc", "https://localhost/vedauth", "https://localhost/vedhsm", "Windows_NT", "default", "default", "intel");
+
+    // Restore mocks so the testing framework can use the fs functions
+    jest.restoreAllMocks();
+
+    // Assert
+    expect(downloadTool).toHaveBeenCalledTimes(1);
+  });
+
 });
 
 describe("getPackageInfo", () => {
@@ -160,4 +187,16 @@ describe("extractSemver", () => {
     });
 });
 
+describe("createFile", () => {
 
+  test('successfully writes to file called \'MyScript.bat\' and should have the expected PowerShell execution content', async () => {
+    let result = jest.spyOn(fs, "writeFileSync").mockReturnValue({});
+
+    // Act
+    await action.createFile("MyScript.bat", "PowerShell --File \"Hello World.ps1\"");
+
+    expect(fs.writeFileSync).toHaveBeenCalledWith("MyScript.bat", "PowerShell --File \"Hello World.ps1\"");
+    expect(result).toHaveBeenCalledTimes(1);
+  });
+
+});
