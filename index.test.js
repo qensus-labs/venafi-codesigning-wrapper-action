@@ -15,6 +15,7 @@ describe("run", () => {
     jest.spyOn(fs, "rmSync").mockReturnValue();
     jest.spyOn(exec, "exec").mockReturnValue({ exitCode:0, stdout: '', stderr: '' });;
     jest.spyOn(fs, "chmodSync").mockReturnValue(undefined);
+    jest.spyOn(fs, "writeFileSync").mockReturnValue({});
     jest.spyOn(fs, "readdirSync").mockReturnValue(["venafi-csc-24.1.0-x86_64.deb"]);
     jest.spyOn(fs, "statSync").mockReturnValue({
       isDirectory: () => {
@@ -40,6 +41,7 @@ describe("run", () => {
     jest.spyOn(fs, "rmSync").mockReturnValue();
     jest.spyOn(exec, "exec").mockReturnValue({ exitCode:0, stdout: '', stderr: '' });;
     jest.spyOn(fs, "chmodSync").mockReturnValue(undefined);
+    jest.spyOn(fs, "writeFileSync").mockReturnValue({});
     jest.spyOn(fs, "readdirSync").mockReturnValue(["venafi-csc-24.1.0-x86_64.rpm"]);
     jest.spyOn(fs, "statSync").mockReturnValue({
       isDirectory: () => {
