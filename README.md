@@ -77,7 +77,7 @@ Below example usage examples you may want to implement using Github Actions `sha
 
 ### Example including initial configuration:
 
-Scenario implements a `pinned` version that includes an initial configuration.
+Scenario implements a `pinned` version with minimal configuration.
 
 ```yaml
 jobs:
@@ -95,7 +95,7 @@ jobs:
           venafi-csc-url: 'https://my-tpp/csc'
           venafi-auth-url: 'https://my-tpp/vedauth'
           venafi-hsm-url: 'https://my-tpp/vedhsm'
-          include-config: 'true'
+          include-config: 'false'
           venafi-user: 'signer'
       - name: Check CSPDriver (version)
         run: pkcs11config --version
@@ -104,7 +104,6 @@ jobs:
 ### Example using minimal configuration:
 
 Scenario implements the `default` version with minimal configuration. It does require a local development environment (TPP).
-
 
 ```yaml
 jobs:
@@ -121,14 +120,18 @@ jobs:
         run: pkcs11config --version
 ```
 
-### Example running on a self-hosted Linux runner with jarsigner:
+### Example running on a self-hosted and shared Linux runner with jarsigner:
 
-Complete implements a `pinned` version that includes an initial configuration. Additionally it demostrated the complete code signing lifecycle using `jarsigner`.
+Complete implements a `pinned` version with minimal configuration. Additionally it demostrated the complete code signing lifecycle using `jarsigner`.
+
+See the [Venafi CodeSign Protect: Python (PyPi) Package](https://pypi.org/project/venafi-csp/) documentation for more detailed configuration examples and applicable parameters.
+
+When using a *shared* runner, only update *runs-on:* parameter value with `ubuntu-latest`.
 
 ```yaml
 jobs:
   example:
-    runs-on: ["self-hosted", "Linux", "X64"]
+    runs-on: ["self-hosted", "Linux", "X64"] # runs-on: ubuntu-latest
     name: Example with self-hosted Linux runner
     steps:
       - name: Setup CSPDriver
@@ -139,10 +142,9 @@ jobs:
           venafi-csc-url: 'https://my-tpp/csc'
           venafi-auth-url: 'https://my-tpp/vedauth'
           venafi-hsm-url: 'https://my-tpp/vedhsm'
-          include-config: 'true'
+          include-config: 'false'
       - name: Display output values
         run: |
-          echo "Output \"csp-driver-cached-config\" [${{steps.cspdriver.outputs.csp-driver-cached-config}}]"
           echo "Output \"csp-driver-cached-path\" [${{steps.cspdriver.outputs.csp-driver-cached-path}}]"
           echo "Output \"csp-driver-cached-version\" [${{steps.cspdriver.outputs.csp-driver-cached-version}}]"
       - name: Check CSPDriver (version)
@@ -160,7 +162,7 @@ jobs:
           javac Foo.java
           jar -cf foo.jar Foo.class
       - name: Store the foo.jar artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: foo.jar
           path: foo.jar
@@ -182,17 +184,34 @@ jobs:
           VENAFI_CLIENT_TOOLS_DIR: '${{ runner.tool_cache }}/CSPDriver/24.1.0/x64/opt/venafi/codesign'
           INPUT_PATH: foo.jar
           CERTIFICATE_LABEL: github-signer-development-codesigner
+     - name: verify artifact with JarSigner
+        run: python -mvenafi_csp.jarsigner_verify_command
+        env:
+          TPP_AUTH_URL: 'https://my-tpp/vedauth'
+          TPP_HSM_URL: 'https://my-tpp/vedhsm'
+          TPP_USERNAME: signer
+          TPP_PASSWORD: ${{ secrets.TPP_PASSWORD }}
+          INPUT_PATH: foo.jar
+          CERTIFICATE_LABEL: github-signer-development-codesigner
+      - name: Store the foo.jar signed & validated artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: foo-signed.jar
+          path: foo.jar
 ```
 
-### Example running on a self-hosted Windows runner with signtool:
+### Example running on a self-hosted and shared Windows runner with signtool:
 
-Scenario implements a `pinned` version that includes an initial configuration. Additionally it demostrated the complete code signing lifecycle using `signtool`.
+Scenario implements a `pinned` version with minimal configuration. Additionally it demostrated the complete code signing lifecycle using `signtool`.
+
+See the [Venafi CodeSign Protect: Python (PyPi) Package](https://pypi.org/project/venafi-csp/) documentation for more detailed configuration examples and applicable parameters.
+
+When using a *shared* runner, only update *runs-on:* parameter value with `windows-latest`.
 
 ```yaml
 jobs:
   example_job:
-    # runs-on: ubuntu-latest
-    runs-on: ["self-hosted", "Windows", "X64" ]
+    runs-on: ["self-hosted", "Windows", "X64" ]   # runs-on: windows-latest
     name: Example with self-hosted Windows runner
     steps:
       - name: Setup CSPDriver
@@ -203,14 +222,60 @@ jobs:
           venafi-csc-url: 'https://my-tpp/csc'
           venafi-auth-url: 'https://my-tpp/vedauth'
           venafi-hsm-url: 'https://my-tpp/vedhsm'
-          include-config: 'true'
+          include-config: 'false'
       - name: Display output values
         run: |
-          echo "Output \"csp-driver-cached-config\" [${{steps.cspdriver.outputs.csp-driver-cached-config}}]"
           echo "Output \"csp-driver-cached-path\" [${{steps.cspdriver.outputs.csp-driver-cached-path}}]"
           echo "Output \"csp-driver-cached-version\" [${{steps.cspdriver.outputs.csp-driver-cached-version}}]"
       - name: Check CSPDriver (version)
-        run: cspconfig.exe version
+        run: |
+          cspconfig.exe version
+      - name: Build foo.exe
+        run: |
+          copy C:\Windows\System32\Notepad.exe foo.exe
+      - name: Store the foo.exe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: foo.exe
+          path: foo.exe
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install Venafi Python package
+        run: pip install venafi-csp
+      - name: Setup Windows SDK
+        uses: GuillaumeFalourd/setup-windows10-sdk-action@v2
+        with:
+          sdk-version: 20348
+      - name: Add SDK (20348) to GITHUB_PATH
+        run: |
+          "C:\Program files (x86)\Windows Kits\10\bin\10.0.20348.0\x64" >> $env:GITHUB_PATH
+      - name: Sign artifact with signtool
+        shell: cmd
+        run: python -mvenafi_csp.signtool_sign_command
+        env:
+          TPP_AUTH_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth'
+          TPP_HSM_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
+          TPP_USERNAME: signer
+          TPP_PASSWORD: ${{ secrets.TPP_PASSWORD }}
+          INPUT_PATH: foo.exe
+          CERTIFICATE_SUBJECT_NAME: signer
+          TIMESTAMPING_SERVERS: http://timestamp.digicert.com
+      - name: Verify artifact with signtool
+        shell: cmd
+        run: python -mvenafi_csp.signtool_verify_command
+        env:
+          TPP_AUTH_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth'
+          TPP_HSM_URL: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
+          TPP_USERNAME: signer
+          TPP_PASSWORD: ${{ secrets.TPP_PASSWORD }}
+          INPUT_PATH: foo.exe
+      - name: Store the foo.exe signed & validated artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: foo-signed.exe
+          path: foo.exe
 ```
 
 ## Contribution & development
