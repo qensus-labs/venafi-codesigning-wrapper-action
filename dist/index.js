@@ -391,25 +391,30 @@ async function run(tempDir, toolName, version, baseURL, authURL, hsmURL, current
     core.addPath(path.dirname(cachedPath));
   }
 
-  core.info(`CSP Driver version: '${version}' has been cached at ${cachedPath}`);
-
-  // set a an output of this action incase future steps need the path to the tool.
-  core.setOutput("csp-driver-cached-version", version);
-  core.setOutput("csp-driver-cached-path", cachedPath);
-
   let cachedConfig;
 
   if (core.getInput('include-config') == 'true') {
     var cachedConfigJson;
     cachedConfig = await setDefaultParams(currentOs, cachedPath, authURL, hsmURL);
-    var configLines = cachedConfig.match(/\[.*:([\s\S]+)\]/)[1].trim().split('\n');
-    configLines.forEach(line => {
-      const [key, value] = line.split('=').map(item => item.trim());
-      var jsonKey = key.replace(/\s+/g, '_').toUpperCase();
-      cachedConfigJson[jsonKey] = value;
-    });
+    var configLines = cachedConfig.match(/^\s*(PKS SERVER URL|HSM SERVER URL|GRANTEE|AUTH SERVER URL|TIMESTAMP SERVER URL|CSC SERVER URL)\s*=\s*(https?:\/\/[^\s]+)\/?$/gm);
+    if (configLines) {
+      configLines.forEach(line => {
+        const [key, value] = line.split('=').map(item => item.trim());
+        const jsonKey = key.replace(/\s+/g, '_').toUpperCase();
+        cachedConfigJson[jsonKey] = value;
+      });
+    }
+  // set a an output of this action incase future steps need the path to the tool.
+    core.setOutput("csp-driver-cached-version", version);
+    core.setOutput("csp-driver-cached-path", cachedPath);
     core.setOutput("csp-driver-cached-config", cachedConfigJson);
   }
+  else {
+     // set a an output of this action incase future steps need the path to the tool.
+    core.setOutput("csp-driver-cached-version", version);
+    core.setOutput("csp-driver-cached-path", cachedPath);
+  }
+  core.info(`CSP Driver version: '${version}' has been cached at ${cachedPath}`);
 }
 
 module.exports = {
