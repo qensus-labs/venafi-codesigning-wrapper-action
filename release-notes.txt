@@ -1,1 +1,1 @@
-Fixed naming & several minor issues
+Improved default config output in JSON format
