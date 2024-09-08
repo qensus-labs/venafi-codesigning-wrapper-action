@@ -394,7 +394,7 @@ async function run(tempDir, toolName, version, baseURL, authURL, hsmURL, current
   let cachedConfig;
 
   if (core.getInput('include-config') == 'true') {
-    var cachedConfigJson;
+    var cachedConfigJson = {};
     cachedConfig = await setDefaultParams(currentOs, cachedPath, authURL, hsmURL);
     var configLines = cachedConfig.match(/^\s*(PKS SERVER URL|HSM SERVER URL|GRANTEE|AUTH SERVER URL|TIMESTAMP SERVER URL|CSC SERVER URL)\s*=\s*(https?:\/\/[^\s]+)\/?$/gm);
     if (configLines) {
