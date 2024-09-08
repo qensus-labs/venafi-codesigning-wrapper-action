@@ -185,14 +185,14 @@ async function setDefaultParams(currentOs, cachedPath, authURL, hsmURL) {
 
   switch (currentOs) {
     case "Linux":
-      await exec.exec(cachedPath, ['seturl',util.format("%s=%s",'--authurl', authURL),util.format("%s=%s",'--hsmurl', hsmURL)] );
-      await exec.exec(cachedPath, ['option','--show'], options );
+      await exec.exec('cspconfig', ['seturl',util.format("%s=%s",'--authurl', authURL),util.format("%s=%s",'--hsmurl', hsmURL)] );
+      await exec.exec('cspconfig', ['option','--show'], options );
       break;
 
     case "Windows_NT":
     default:
-      await exec.exec(cachedPath, ['seturl',util.format("%s=%s",'--authurl', authURL),util.format("%s=%s",'--hsmurl', hsmURL)] );
-      await exec.exec(cachedPath, ['option','--show'], options );
+      await exec.exec('cspconfig.exe', ['seturl',util.format("%s=%s",'--authurl', authURL),util.format("%s=%s",'--hsmurl', hsmURL)] );
+      await exec.exec('cspconfig.exe', ['option','--show'], options );
       break;
   }
   return result;
