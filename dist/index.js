@@ -185,8 +185,8 @@ async function setDefaultParams(currentOs, cachedPath, authURL, hsmURL) {
 
   switch (currentOs) {
     case "Linux":
-      await exec.exec('cspconfig', ['seturl',util.format("%s=%s",'--authurl', authURL),util.format("%s=%s",'--hsmurl', hsmURL)] );
-      await exec.exec('cspconfig', ['option','--show'], options );
+      await exec.exec('pkcs11config', ['seturl',util.format("%s=%s",'--authurl', authURL),util.format("%s=%s",'--hsmurl', hsmURL)] );
+      await exec.exec('pkcs11config', ['option','--show'], options );
       break;
 
     case "Windows_NT":
