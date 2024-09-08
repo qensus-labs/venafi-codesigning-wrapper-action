@@ -387,23 +387,29 @@ async function run(tempDir, toolName, version, baseURL, authURL, hsmURL, current
   core.info(`Identified '${currentDistro}' for ${currentFamily} ${currentOs}`);
   
   let cachedPath = await downloadVenafiCSP(tempDir, toolName, baseURL, currentOs, currentDistro, currentFamily, architecture, version);
-
   if (!process.env["PATH"].startsWith(path.dirname(cachedPath))) {
     core.addPath(path.dirname(cachedPath));
-  }
-
-  let cachedConfig
-
-  if (core.getInput('include-config') == 'true') {
-    cachedConfig = await setDefaultParams(currentOs, cachedPath, authURL, hsmURL);
   }
 
   core.info(`CSP Driver version: '${version}' has been cached at ${cachedPath}`);
 
   // set a an output of this action incase future steps need the path to the tool.
-  core.setOutput("csp-driver-cached-config", cachedConfig);
-  core.setOutput("csp-driver-cached-path", cachedPath);
   core.setOutput("csp-driver-cached-version", version);
+  core.setOutput("csp-driver-cached-path", cachedPath);
+
+  let cachedConfig;
+
+  if (core.getInput('include-config') == 'true') {
+    var cachedConfigJson;
+    cachedConfig = await setDefaultParams(currentOs, cachedPath, authURL, hsmURL);
+    var configLines = cachedConfig.match(/\[.*:([\s\S]+)\]/)[1].trim().split('\n');
+    configLines.forEach(line => {
+      const [key, value] = line.split('=').map(item => item.trim());
+      var jsonKey = key.replace(/\s+/g, '_').toUpperCase();
+      cachedConfigJson[jsonKey] = value;
+    });
+    core.setOutput("csp-driver-cached-config", cachedConfigJson);
+  }
 }
 
 module.exports = {
