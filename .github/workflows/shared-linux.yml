@@ -2,18 +2,18 @@ on:
   workflow_dispatch:
 
 jobs:
-  example_job:
+  github_hosted_example_job:
     # runs-on: ubuntu-latest
-    runs-on: ["self-hosted", "Linux", "X64"]
-    name: Example with self-hosted Linux runner
+    runs-on: ubuntu-latest
+    name: Example with github hosted runner
     steps:
       - name: Setup CSPDriver
         id: cspdriver
-        uses: qensus-labs/venafi-codesigning-wrapper-action@v0.9.1
+        uses: qensus-labs/venafi-codesigning-wrapper-action@v0.6.1
         with:
-          venafi-csc-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/csc'
-          venafi-auth-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth'
-          venafi-hsm-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
+          tpp-csc-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/csc'
+          tpp-auth-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedauth'
+          tpp-hsm-url: 'https://uvo1gm8xtvysk75eax6.env.cloudshare.com/vedhsm'
           include-config: 'false'
       - name: Display output values
         run: |
@@ -59,6 +59,11 @@ jobs:
           TPP_PASSWORD: ${{ secrets.TPP_PASSWORD }}
           INPUT_PATH: foo.jar
           CERTIFICATE_LABEL: github-signer-development-codesigner
+      - name: Store the foo.jar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: foo-signed.jar
+          path: foo.jar
       - name: verify artifact with JarSigner
         run: python -mvenafi_csp.jarsigner_verify_command
         env:

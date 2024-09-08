@@ -5,23 +5,6 @@ const core = require("@actions/core");
 const tc = require("@actions/tool-cache");
 const exec = require("@actions/exec");
 
-// Variable from Github to asign.
-const tempDir = process.env['RUNNER_TEMP'];
-
-// The name of the tool we are installing with this action, which is 'Venafi Code Sign Protect'
-const toolName = "Venafi_CSP";
-
-// The architecture of the system to install the package on. Most scenarios 'intel' is applicable.
-const architecture = core.getInput('architecture');
-
-// Base form of the the URL to download the release archives. As long as this
-// does not change this will be able to download any version the CLI.
-const baseURL = core.getInput('tpp-csc-url') + '/clients';
-
-const authURL = core.getInput('tpp-auth-url');
-
-const hsmURL = core.getInput('tpp-hsm-url');
-
 // Util to create a file with certain content to execute, such as a script. File can be temporary or static.
 async function createFile(filePath, content) {
   try {
@@ -36,9 +19,15 @@ async function createFile(filePath, content) {
 
 // Utii too extract the '<Major>.<Minor>' version the Semmantic Versioning Convention. Example is '24.1'
 function extractSemver(version) {
-  var [major, minor] = version.split('.');
-  var semver = major + "." + minor;
-  return semver;
+  var match = version.match(/^v?(\d+)\.(\d+)/);
+  if (match) {
+    var semver = match[1] + "." + match[2];
+    return semver;
+  } else {
+    throw new Error(
+      util.format("Failed to extract Semantic version", version),
+    );
+  }
 }
 
 // Function to uninstall or remove the previous installed Venafi_CSP package.
@@ -67,7 +56,7 @@ async function removeVenafiCSP(currentOs, currentDistro, currentFamily, installI
 }
 
 // Function to check if a current Venafi_CSP installation exists, checks current installation version, and if needed trigger a reinstall.
-async function checkVenafiCSP(currentOs, currentDistro, currentFamily, version) {
+async function checkVenafiCSP(tempDir, currentOs, currentDistro, currentFamily, version) {
   const semver = extractSemver(version);
   let localSemver = "";
   let reinstall = true;
@@ -131,7 +120,7 @@ async function checkVenafiCSP(currentOs, currentDistro, currentFamily, version) 
         core.info(`Matched CSP Driver semantic version ${localSemver}`);
         reinstall = false;
       }
-      const match = stdout.match(/\{[0-9A-Fa-f\-]+\}/);
+      const match = stdout.match(/\{[0-9A-Fa-f-]+\}/);
       if (match) installId = match[0];
     }
   } else if (currentOs === 'Darwin' && currentDistro === 'default') {
@@ -166,6 +155,8 @@ async function installVenafiCSP(cachedToolPath, packageName, currentOs, currentD
   else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
     packageInstaller = 'msiexec'
     await exec.exec('powershell', ['Start-Process','-FilePath', util.format("%s\\%s",cachedToolPath, packageName), '-Wait'  ], options );
+    // Let's add the default installation path to GITHUB_PATH for the next step to consume.
+    core.addPath('C:\\Program Files\\Venafi CodeSign Protect');
   }
   else if (currentOs == 'Darwin' && currentDistro == 'default') {
     packageInstaller = 'installer'
@@ -203,7 +194,7 @@ async function setDefaultParams(currentOs, cachedPath, authURL, hsmURL) {
 
 
 // Function too get the package related information and returns it in a formatted way.
-function getPackageInfo(baseURL, currentOs, currentDistro, currentFamily, version) {
+function getPackageInfo(baseURL, currentOs, currentDistro, currentFamily, architecture, version) {
   var url = "";
   var file = "";
   if (currentOs == 'Linux' && currentFamily == 'debian' && architecture == 'intel') {
@@ -243,10 +234,10 @@ function getPackageInfo(baseURL, currentOs, currentDistro, currentFamily, versio
 }
 
 // Function which is the core for downloading and caching the initial package. Additional it is the umbrella for other functions.
-async function downloadVenafiCSP(baseURL, currentOs, currentDistro, currentFamily, version) {
+async function downloadVenafiCSP(tempDir, toolName, baseURL, currentOs, currentDistro, currentFamily, architecture, version) {
   
   // Initial setup or already installed with the correct version?
-  const { reinstall, installId }  = await checkVenafiCSP(currentOs, currentDistro, currentFamily, version);
+  const { reinstall, installId }  = await checkVenafiCSP(tempDir, currentOs, currentDistro, currentFamily, version);
   core.debug(`reinstall: ${reinstall}`);
   
   if (reinstall) {
@@ -254,7 +245,7 @@ async function downloadVenafiCSP(baseURL, currentOs, currentDistro, currentFamil
   }
 
   // Generate all information for the Venafi_CSP downloadTool.
-  const download = getPackageInfo(baseURL,currentOs,currentDistro, currentFamily, version);
+  const download = getPackageInfo(baseURL,currentOs,currentDistro, currentFamily, architecture, version);
 
   // Maybe the Venafi_CSP package is already cached?
   let cachedToolPath = tc.find(toolName, version);
@@ -287,14 +278,25 @@ async function downloadVenafiCSP(baseURL, currentOs, currentDistro, currentFamil
     else {
       fs.rmSync(downloadPath);
     }
+    
+    if (cachedToolPath) {
+      var disclaimer = `
+      This binary software is the property of Venafi Inc., which is licensed and can be used under license terms. All rights reserved by Venafi Inc.
+      See https://venafi.com/terms-of-use/ for more information.
+      `
+      core.debug(`disclaimer: ${disclaimer}`);
+      createFile(util.format("%s/%s",cachedToolPath, "disclaimer.txt"), disclaimer);
+    }
 
+    
+    
     // This is needed, since the @actions/Toolkit/Caching module checks (using legacy env: %PATHEXT% list) if the tool/package is executable on Windows. This isn' the case for Linux.
     if (currentOs == 'Windows_NT') {
       core.debug(`Setup initialized using batch file`);
-      var package = util.format("%s\\%s",cachedToolPath, download.savefile);
-      core.debug(`package: ${package}`);
+      var msiPackage = util.format("%s\\%s",cachedToolPath, download.savefile);
+      core.debug(`msipackage: ${msiPackage}`);
       const content = `
-      msiexec /qn /i "${package}"
+      msiexec /qn /i "${msiPackage}"
       `
       core.debug(`content: ${content}`);
       createFile(util.format("%s/%s",cachedToolPath, download.setupfile), content);
@@ -305,8 +307,8 @@ async function downloadVenafiCSP(baseURL, currentOs, currentDistro, currentFamil
   
   // Now that we have the install package let's installl this for the currentOs + distribution.
   if (reinstall) {
-    var setupPackage = await installVenafiCSP(cachedToolPath, download.setupfile, currentOs, currentDistro, currentFamily);
-    core.debug(`Installation results: ${setupPackage}`);
+    var installResults = await installVenafiCSP(cachedToolPath, download.setupfile, currentOs, currentDistro, currentFamily);
+    core.debug(`Installation results: ${installResults}`);
   }
 
   // Now conclude we can find the correct tool/package and if it's executable on Windows.
@@ -375,10 +377,10 @@ function walkSync(dir, fileList, fileToFind) {
 }
 
 // The main function of this action. It hooks the actual setup Venafi_CSP functions to more configuration functions.
-async function run(currentOs, currentDistro, currentFamily, version) {
+async function run(tempDir, toolName, version, baseURL, authURL, hsmURL, currentOs, currentDistro, currentFamily, architecture) {
   core.info(`Identified '${currentDistro}' for ${currentFamily} ${currentOs}`);
   
-  let cachedPath = await downloadVenafiCSP(baseURL, currentOs, currentDistro, currentFamily, version);
+  let cachedPath = await downloadVenafiCSP(tempDir, toolName, baseURL, currentOs, currentDistro, currentFamily, architecture, version);
 
   if (!process.env["PATH"].startsWith(path.dirname(cachedPath))) {
     core.addPath(path.dirname(cachedPath));
@@ -402,5 +404,8 @@ module.exports = {
   run: run,
   setDefaultParams: setDefaultParams,
   downloadVenafiCSP: downloadVenafiCSP,
+  checkVenafiCSP: checkVenafiCSP,
   getPackageInfo: getPackageInfo,
+  extractSemver: extractSemver,
+  createFile: createFile,
 };

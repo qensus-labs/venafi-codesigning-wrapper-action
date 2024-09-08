@@ -3,146 +3,178 @@ const path = require("path");
 const action = require("./action");
 const tc = require("@actions/tool-cache");
 const core = require("@actions/core");
-
-const baseURL = "https://localhost/csc/clients"
+const exec = require("@actions/exec");
+//const { url } = require("inspector");
 
 describe("run", () => {
-  test("should untar Linux archive", async () => {
-    // Arrange
-    jest.spyOn(tc, "find").mockReturnValue();
-    jest.spyOn(tc, "cacheDir").mockReturnValue("/home/sysadmin/actions-runner/_work/_tool/Venafi_CSP/24.1.0/x64");
-    let extractTar = jest.spyOn(tc, "extractTar").mockReturnValue("/home/sysadmin/actions-runner/_work/_temp/Venafi_CSP");
-    jest.spyOn(tc, "downloadTool").mockReturnValue("/home/sysadmin/actions-runner/_work/_temp/Venafi_CSP");
-
-    jest.spyOn(fs, "chmodSync").mockReturnValue();
-    jest.spyOn(fs, "readdirSync").mockReturnValue(["pkcs11config"]);
+  test("should cache the Linux DEB package for Ubuntu", async () => {
+    jest.spyOn(tc, "find").mockReturnValue(undefined);
+    jest.spyOn(exec, "getExecOutput").mockReturnValue({ exitCode:1, stdout: '', stderr: '' });
+    let downloadTool = jest.spyOn(tc, "downloadTool").mockReturnValue("venafi-csc-24.1.0-x86_64.deb");
+    jest.spyOn(tc, "cacheFile").mockReturnValue("/home/sysadmin/actions-runner/_work/_tool/Venafi_CSP/24.1.0/x64/");
+    jest.spyOn(fs, "rmSync").mockReturnValue();
+    jest.spyOn(exec, "exec").mockReturnValue({ exitCode:0, stdout: '', stderr: '' });;
+    jest.spyOn(fs, "chmodSync").mockReturnValue(undefined);
+    jest.spyOn(fs, "writeFileSync").mockReturnValue({});
+    jest.spyOn(fs, "readdirSync").mockReturnValue(["venafi-csc-24.1.0-x86_64.deb"]);
     jest.spyOn(fs, "statSync").mockReturnValue({
       isDirectory: () => {
         false;
       },
     });
-    jest.spyOn(fs, "rmdirSync").mockReturnValue();
-
+    
     // Act
-    await action.run("Linux", "ubuntu", "24.1.0");
+    await action.run("/_temp/", "Venafi_CSP", "24.1.0", "https://localhost/csc", "https://localhost/vedauth", "https://localhost/vedhsm", "Linux", "ubuntu", "debian", "intel");
 
     // Restore mocks so the testing framework can use the fs functions
     jest.restoreAllMocks();
 
     // Assert
-    expect(extractTar).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe("getCSPDriverDownloadURL", () => {
-  test("should download the Windows version", () => {
-    // Act
-    let url = action.getCSPDriverDownloadURL("https://localhost/csc/clients", "Windows_NT", "default", "24.1.0");
-
-    // Assert
-    expect(url).toEqual(
-      "https://localhost/csc/clients/venafi-csc-latest-x86_64.msi"
-    );
+    expect(downloadTool).toHaveBeenCalledTimes(1);
   });
 
-  test("should download the Linux version", () => {
-    // Act
-    let url = action.getCSPDriverDownloadURL("https://localhost/csc/clients","Linux", "ubuntu", "24.1.0");
-
-    // Assert
-    expect(url).toEqual(
-      "https://localhost/csc/clients/venafi-csc-latest-x86_64.deb"
-    );
-  });
-
-});
-
-describe("download CSPDriver", () => {
-  test("should return toolPath", async () => {
-    // Arrange
-    jest.spyOn(tc, "find").mockReturnValue("/home/sysadmin/actions-runner/_work/_tool/Venafi_CSP/24.1.0/x64");
-
-    jest.spyOn(path, "join").mockReturnValue("/home/sysadmin/actions-runner/_work/_tool/Venafi_CSP/24.1.0/x64/opt/venafi/codesign/bin/pkcs11config");
-
-    jest.spyOn(fs, "chmodSync").mockReturnValue();
-    jest.spyOn(fs, "readdirSync").mockReturnValue(["pkcs11config"]);
+  test("should cache the Linux RPM package for Rhel", async () => {
+    jest.spyOn(tc, "find").mockReturnValue(undefined);
+    jest.spyOn(exec, "getExecOutput").mockReturnValue({ exitCode:1, stdout: '', stderr: '' });
+    let downloadTool = jest.spyOn(tc, "downloadTool").mockReturnValue("venafi-csc-24.1.0-x86_64.rpm");
+    jest.spyOn(tc, "cacheFile").mockReturnValue("/home/sysadmin/actions-runner/_work/_tool/Venafi_CSP/24.1.0/x64/");
+    jest.spyOn(fs, "rmSync").mockReturnValue();
+    jest.spyOn(exec, "exec").mockReturnValue({ exitCode:0, stdout: '', stderr: '' });;
+    jest.spyOn(fs, "chmodSync").mockReturnValue(undefined);
+    jest.spyOn(fs, "writeFileSync").mockReturnValue({});
+    jest.spyOn(fs, "readdirSync").mockReturnValue(["venafi-csc-24.1.0-x86_64.rpm"]);
     jest.spyOn(fs, "statSync").mockReturnValue({
       isDirectory: () => {
-        return false;
+        false;
       },
     });
-
+    
     // Act
-    let actual = await action.downloadCSPDriver("https://localhost/csc/clients", "Linux", "ubuntu", "24.1.0");
+    await action.run("/_temp/", "Venafi_CSP", "24.1.0", "https://localhost/csc", "https://localhost/vedauth", "https://localhost/vedhsm", "Linux", "rhel", "redhat", "intel");
 
-    // Assert
     // Restore mocks so the testing framework can use the fs functions
     jest.restoreAllMocks();
-    expect(actual).toBe("/home/sysadmin/actions-runner/_work/_tool/Venafi_CSP/24.1.0/x64/opt/venafi/codesign/bin/pkcs11config");
+
+    // Assert
+    expect(downloadTool).toHaveBeenCalledTimes(1);
   });
 
-  test("should throw if CSPDriver can't be found", async () => {
-    // Arrange
-    // If 3 assertions are not tested that means the exception
-    // was not thrown
-    expect.assertions(3);
+  test("should cache the MSI Installer package & setup script for Windows_NT", async () => {
+    jest.spyOn(tc, "find").mockReturnValue(undefined);
+    jest.spyOn(exec, "getExecOutput").mockReturnValue({ exitCode:1, stdout: '', stderr: '' });
+    let downloadTool = jest.spyOn(tc, "downloadTool").mockReturnValue("venafi-csc-24.1.0-x86_64.msi");
+    jest.spyOn(tc, "cacheFile").mockReturnValue("/home/sysadmin/actions-runner/_work/_tool/Venafi_CSP/24.1.0/x64/");
+    jest.spyOn(fs, "rmSync").mockReturnValue();
+    jest.spyOn(exec, "exec").mockReturnValue({ exitCode:0, stdout: '', stderr: '' });;
+    jest.spyOn(fs, "chmodSync").mockReturnValue(undefined);
+    jest.spyOn(fs, "writeFileSync").mockReturnValue({});
+    jest.spyOn(fs, "readdirSync").mockReturnValue(["venafi-csc-24.1.0-x86_64.bat"]);
+    jest.spyOn(fs, "statSync").mockReturnValue({
+      isDirectory: () => {
+        false;
+      },
+    });
+    
+    // Act
+    await action.run("C:\temp", "Venafi_CSP", "24.1.0", "https://localhost/csc", "https://localhost/vedauth", "https://localhost/vedhsm", "Windows_NT", "default", "default", "intel");
 
-    jest.spyOn(tc, "find").mockReturnValue("/home/sysadmin/actions-runner/_work/_tool/Venafi_CSP/24.1.0/x64");
-    jest.spyOn(tc, "cacheDir").mockReturnValue("/home/sysadmin/actions-runner/_work/_tool/Venafi_CSP/24.1.0/x64");
-    let extractTar = jest.spyOn(tc, "extractTar").mockReturnValue();
-    jest.spyOn(tc, "downloadTool").mockReturnValue("/home/sysadmin/actions-runner/_work/_temp/Venafi_CSP");
+    // Restore mocks so the testing framework can use the fs functions
+    jest.restoreAllMocks();
 
-    jest.spyOn(path, "join").mockReturnValue("");
-
-    jest.spyOn(fs, "chmodSync").mockReturnValue();
-    jest
-      .spyOn(fs, "readdirSync")
-      .mockReturnValueOnce(["pkcs11config"])
-
-    jest
-      .spyOn(fs, "statSync")
-      .mockReturnValueOnce({
-        isDirectory: () => {
-          return true;
-        },
-      })
-      .mockReturnValueOnce({
-        isDirectory: () => {
-          return false;
-        },
-      });
-
-    try {
-      // Act
-      await action.downloadCSPDriver("https://localhost/csc/clients", "Linux", "ubuntu", "24.1.0");
-    } catch (error) {
-      // Restore mocks so the testing framework can use the fs functions
-      jest.restoreAllMocks();
-
-      // Assert
-      expect(error).toBeInstanceOf(Error);
-      expect(error).toHaveProperty(
-        "message",
-        "CSP Driver package not found in path /home/sysadmin/actions-runner/_work/_tool/Venafi_CSP/24.1.0/x64"
-      );
-
-      // Number of calls should be zero because of the error
-      expect(extractTar).toHaveBeenCalledTimes(0);
-    }
+    // Assert
+    expect(downloadTool).toHaveBeenCalledTimes(1);
   });
 
-  test("should throw on download failure", async () => {
+});
+
+describe("getPackageInfo", () => {
+  test("should provide Windows package download information", () => {
+    // Act
+    let download = action.getPackageInfo("https://localhost/csc/clients", "Windows_NT", "default", "default", "intel", "24.1.0");
+
+    // Assert
+    expect(download).toMatchObject( {
+      url: "https://localhost/csc/clients/venafi-csc-latest-x86_64.msi",
+      savefile: "venafi-csc-24.1.0-x86_64.msi",
+      setupfile: "venafi-csc-24.1.0-x86_64.bat"
+    });
+  });
+
+  test("should provide RPM package download information", () => {
+    // Act
+    let download = action.getPackageInfo("https://localhost/csc/clients", "Linux", "rhel", "redhat", "intel", "24.1.0");
+
+    // Assert
+    expect(download).toMatchObject( {
+      url: "https://localhost/csc/clients/venafi-csc-latest-x86_64.rpm",
+      savefile: "venafi-csc-24.1.0-x86_64.rpm",
+      setupfile: "venafi-csc-24.1.0-x86_64.rpm"
+    });
+  });
+
+  test("should provide DEB package download information", () => {
+    // Act
+    let download = action.getPackageInfo("https://localhost/csc/clients", "Linux", "ubuntu", "debian", "intel", "24.1.0");
+
+    // Assert
+    expect(download).toMatchObject( {
+      url: "https://localhost/csc/clients/venafi-csc-latest-x86_64.deb",
+      savefile: "venafi-csc-24.1.0-x86_64.deb",
+      setupfile: "venafi-csc-24.1.0-x86_64.deb"
+    });
+  });
+
+});
+
+describe("extractSemver", () => {
+
+  test("should provide a correct semantic version for simple '24.1.0'", () => {
+    // Act
+    let semver = action.extractSemver("24.1.0");
+
+    // Assert
+    expect(semver).toEqual(
+      "24.1"
+    );
+  });
+
+  test("should provide a correct semantic version for simple '24.1-0.0'", () => {
+    // Act
+    let semver = action.extractSemver("24.1-0.0");
+
+    // Assert
+    expect(semver).toEqual(
+      "24.1"
+    );
+  });
+
+  test("should provide a correct semantic version for simple '24.1.0.1.0.0alpha'", () => {
+    // Act
+    let semver = action.extractSemver("24.1.0.1.0.0alpha");
+
+    // Assert
+    expect(semver).toEqual(
+      "24.1"
+    );
+  });
+
+  test("should provide a correct semantic version with an optional 'v' like 'v24.1.0'", () => {
+    // Act
+    let semver = action.extractSemver("v24.1.0");
+
+    // Assert
+    expect(semver).toEqual(
+      "24.1"
+    );
+  });
+
+  test("Returns an Error when semantic version cannot be extracted from version like 'deploy24.1.0'", () => {
     // Arrange
     expect.assertions(2);
 
-    jest.spyOn(tc, "find").mockReturnValue();
-    jest.spyOn(tc, "downloadTool").mockImplementation(() => {
-      throw "error";
-    });
-
     try {
       // Act
-      await action.downloadCSPDriver("https://localhost/csc/clients","Linux", "ubuntu", "24.1.0");
+      let semver = action.extractSemver("deloy24.1.0");
     } catch (error) {
       // Restore mocks so the testing framework can use the fs functions
       jest.restoreAllMocks();
@@ -151,9 +183,22 @@ describe("download CSPDriver", () => {
       expect(error).toBeInstanceOf(Error);
       expect(error).toHaveProperty(
         "message",
-        "Failed to download CSPDriver from location https://localhost/csc/clients/venafi-csc-latest-x86_64.deb"
+        "Failed to extract Semantic version deloy24.1.0"
       );
     }
+    });
+});
+
+describe("createFile", () => {
+
+  test('successfully writes to file called \'MyScript.bat\' and should have the expected PowerShell execution content', async () => {
+    let result = jest.spyOn(fs, "writeFileSync").mockReturnValue({});
+
+    // Act
+    await action.createFile("MyScript.bat", "PowerShell --File \"Hello World.ps1\"");
+
+    expect(fs.writeFileSync).toHaveBeenCalledWith("MyScript.bat", "PowerShell --File \"Hello World.ps1\"");
+    expect(result).toHaveBeenCalledTimes(1);
   });
 
 });

@@ -9,11 +9,11 @@ inputs:
     description: 'The running system  architecture, either "intel" or "arm" based'
     required: false
     default: 'intel'
-  tpp-csc-url:
+  venafi-csc-url:
     description: 'CodeSign Protect Client Downloads page'
     required: false
     default: 'https://localhost/csc'
-  tpp-version:
+  venafi-version:
     description: 'Version of CSP driver to install'
     required: false
     default: '24.1.0'
@@ -21,19 +21,19 @@ inputs:
     description: 'Generate a default configuration'
     required: false
     default: 'false'
-  tpp-auth-url:
+  venafi-auth-url:
     description: 'The CSP authorization URL'
     required: false
     default: 'https://localhost/vedauth'
-  tpp-hsm-url:
+  venafi-hsm-url:
     description: 'The TPP Hardware Security Module (HSM) backend URL'
     required: false
     default: 'https://localhost/vedhsm'
-  tpp-username:
+  venafi-username:
     description: 'A login username for the CSP'
     required: false
     default: 'signer'
-  tpp-password:
+  venafi-password:
     description: 'The password associated with the login username'
     required: false
 outputs:

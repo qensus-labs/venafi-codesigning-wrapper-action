@@ -1,32 +1,15 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 1834:
+/***/ 2425:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const fs = __nccwpck_require__(7147);
 const util = __nccwpck_require__(3837);
 const path = __nccwpck_require__(1017);
-const core = __nccwpck_require__(6024);
-const tc = __nccwpck_require__(3594);
-const exec = __nccwpck_require__(2423);
-
-// Variable from Github to asign.
-const tempDir = process.env['RUNNER_TEMP'];
-
-// The name of the tool we are installing with this action, which is 'Venafi Code Sign Protect'
-const toolName = "Venafi_CSP";
-
-// The architecture of the system to install the package on. Most scenarios 'intel' is applicable.
-const architecture = core.getInput('architecture');
-
-// Base form of the the URL to download the release archives. As long as this
-// does not change this will be able to download any version the CLI.
-const baseURL = core.getInput('tpp-csc-url') + '/clients';
-
-const authURL = core.getInput('tpp-auth-url');
-
-const hsmURL = core.getInput('tpp-hsm-url');
+const core = __nccwpck_require__(8864);
+const tc = __nccwpck_require__(9898);
+const exec = __nccwpck_require__(8752);
 
 // Util to create a file with certain content to execute, such as a script. File can be temporary or static.
 async function createFile(filePath, content) {
@@ -42,9 +25,15 @@ async function createFile(filePath, content) {
 
 // Utii too extract the '<Major>.<Minor>' version the Semmantic Versioning Convention. Example is '24.1'
 function extractSemver(version) {
-  var [major, minor] = version.split('.');
-  var semver = major + "." + minor;
-  return semver;
+  var match = version.match(/^v?(\d+)\.(\d+)/);
+  if (match) {
+    var semver = match[1] + "." + match[2];
+    return semver;
+  } else {
+    throw new Error(
+      util.format("Failed to extract Semantic version", version),
+    );
+  }
 }
 
 // Function to uninstall or remove the previous installed Venafi_CSP package.
@@ -73,7 +62,7 @@ async function removeVenafiCSP(currentOs, currentDistro, currentFamily, installI
 }
 
 // Function to check if a current Venafi_CSP installation exists, checks current installation version, and if needed trigger a reinstall.
-async function checkVenafiCSP(currentOs, currentDistro, currentFamily, version) {
+async function checkVenafiCSP(tempDir, currentOs, currentDistro, currentFamily, version) {
   const semver = extractSemver(version);
   let localSemver = "";
   let reinstall = true;
@@ -137,7 +126,7 @@ async function checkVenafiCSP(currentOs, currentDistro, currentFamily, version) 
         core.info(`Matched CSP Driver semantic version ${localSemver}`);
         reinstall = false;
       }
-      const match = stdout.match(/\{[0-9A-Fa-f\-]+\}/);
+      const match = stdout.match(/\{[0-9A-Fa-f-]+\}/);
       if (match) installId = match[0];
     }
   } else if (currentOs === 'Darwin' && currentDistro === 'default') {
@@ -172,6 +161,8 @@ async function installVenafiCSP(cachedToolPath, packageName, currentOs, currentD
   else if (currentOs == 'Windows_NT' && currentDistro == 'default') {
     packageInstaller = 'msiexec'
     await exec.exec('powershell', ['Start-Process','-FilePath', util.format("%s\\%s",cachedToolPath, packageName), '-Wait'  ], options );
+    // Let's add the default installation path to GITHUB_PATH for the next step to consume.
+    core.addPath('C:\\Program Files\\Venafi CodeSign Protect');
   }
   else if (currentOs == 'Darwin' && currentDistro == 'default') {
     packageInstaller = 'installer'
@@ -209,7 +200,7 @@ async function setDefaultParams(currentOs, cachedPath, authURL, hsmURL) {
 
 
 // Function too get the package related information and returns it in a formatted way.
-function getPackageInfo(baseURL, currentOs, currentDistro, currentFamily, version) {
+function getPackageInfo(baseURL, currentOs, currentDistro, currentFamily, architecture, version) {
   var url = "";
   var file = "";
   if (currentOs == 'Linux' && currentFamily == 'debian' && architecture == 'intel') {
@@ -249,10 +240,10 @@ function getPackageInfo(baseURL, currentOs, currentDistro, currentFamily, versio
 }
 
 // Function which is the core for downloading and caching the initial package. Additional it is the umbrella for other functions.
-async function downloadVenafiCSP(baseURL, currentOs, currentDistro, currentFamily, version) {
+async function downloadVenafiCSP(tempDir, toolName, baseURL, currentOs, currentDistro, currentFamily, architecture, version) {
   
   // Initial setup or already installed with the correct version?
-  const { reinstall, installId }  = await checkVenafiCSP(currentOs, currentDistro, currentFamily, version);
+  const { reinstall, installId }  = await checkVenafiCSP(tempDir, currentOs, currentDistro, currentFamily, version);
   core.debug(`reinstall: ${reinstall}`);
   
   if (reinstall) {
@@ -260,7 +251,7 @@ async function downloadVenafiCSP(baseURL, currentOs, currentDistro, currentFamil
   }
 
   // Generate all information for the Venafi_CSP downloadTool.
-  const download = getPackageInfo(baseURL,currentOs,currentDistro, currentFamily, version);
+  const download = getPackageInfo(baseURL,currentOs,currentDistro, currentFamily, architecture, version);
 
   // Maybe the Venafi_CSP package is already cached?
   let cachedToolPath = tc.find(toolName, version);
@@ -293,14 +284,25 @@ async function downloadVenafiCSP(baseURL, currentOs, currentDistro, currentFamil
     else {
       fs.rmSync(downloadPath);
     }
+    
+    if (cachedToolPath) {
+      var disclaimer = `
+      This binary software is the property of Venafi Inc., which is licensed and can be used under license terms. All rights reserved by Venafi Inc.
+      See https://venafi.com/terms-of-use/ for more information.
+      `
+      core.debug(`disclaimer: ${disclaimer}`);
+      createFile(util.format("%s/%s",cachedToolPath, "disclaimer.txt"), disclaimer);
+    }
 
+    
+    
     // This is needed, since the @actions/Toolkit/Caching module checks (using legacy env: %PATHEXT% list) if the tool/package is executable on Windows. This isn' the case for Linux.
     if (currentOs == 'Windows_NT') {
       core.debug(`Setup initialized using batch file`);
-      var package = util.format("%s\\%s",cachedToolPath, download.savefile);
-      core.debug(`package: ${package}`);
+      var msiPackage = util.format("%s\\%s",cachedToolPath, download.savefile);
+      core.debug(`msipackage: ${msiPackage}`);
       const content = `
-      msiexec /qn /i "${package}"
+      msiexec /qn /i "${msiPackage}"
       `
       core.debug(`content: ${content}`);
       createFile(util.format("%s/%s",cachedToolPath, download.setupfile), content);
@@ -311,8 +313,8 @@ async function downloadVenafiCSP(baseURL, currentOs, currentDistro, currentFamil
   
   // Now that we have the install package let's installl this for the currentOs + distribution.
   if (reinstall) {
-    var setupPackage = await installVenafiCSP(cachedToolPath, download.setupfile, currentOs, currentDistro, currentFamily);
-    core.debug(`Installation results: ${setupPackage}`);
+    var installResults = await installVenafiCSP(cachedToolPath, download.setupfile, currentOs, currentDistro, currentFamily);
+    core.debug(`Installation results: ${installResults}`);
   }
 
   // Now conclude we can find the correct tool/package and if it's executable on Windows.
@@ -381,10 +383,10 @@ function walkSync(dir, fileList, fileToFind) {
 }
 
 // The main function of this action. It hooks the actual setup Venafi_CSP functions to more configuration functions.
-async function run(currentOs, currentDistro, currentFamily, version) {
+async function run(tempDir, toolName, version, baseURL, authURL, hsmURL, currentOs, currentDistro, currentFamily, architecture) {
   core.info(`Identified '${currentDistro}' for ${currentFamily} ${currentOs}`);
   
-  let cachedPath = await downloadVenafiCSP(baseURL, currentOs, currentDistro, currentFamily, version);
+  let cachedPath = await downloadVenafiCSP(tempDir, toolName, baseURL, currentOs, currentDistro, currentFamily, architecture, version);
 
   if (!process.env["PATH"].startsWith(path.dirname(cachedPath))) {
     core.addPath(path.dirname(cachedPath));
@@ -408,12 +410,15 @@ module.exports = {
   run: run,
   setDefaultParams: setDefaultParams,
   downloadVenafiCSP: downloadVenafiCSP,
+  checkVenafiCSP: checkVenafiCSP,
   getPackageInfo: getPackageInfo,
+  extractSemver: extractSemver,
+  createFile: createFile,
 };
 
 /***/ }),
 
-/***/ 5350:
+/***/ 9165:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -440,7 +445,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.issue = exports.issueCommand = void 0;
 const os = __importStar(__nccwpck_require__(2037));
-const utils_1 = __nccwpck_require__(7369);
+const utils_1 = __nccwpck_require__(798);
 /**
  * Commands
  *
@@ -512,7 +517,7 @@ function escapeProperty(s) {
 
 /***/ }),
 
-/***/ 6024:
+/***/ 8864:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -547,12 +552,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getIDToken = exports.getState = exports.saveState = exports.group = exports.endGroup = exports.startGroup = exports.info = exports.notice = exports.warning = exports.error = exports.debug = exports.isDebug = exports.setFailed = exports.setCommandEcho = exports.setOutput = exports.getBooleanInput = exports.getMultilineInput = exports.getInput = exports.addPath = exports.setSecret = exports.exportVariable = exports.ExitCode = void 0;
-const command_1 = __nccwpck_require__(5350);
-const file_command_1 = __nccwpck_require__(8466);
-const utils_1 = __nccwpck_require__(7369);
+const command_1 = __nccwpck_require__(9165);
+const file_command_1 = __nccwpck_require__(6526);
+const utils_1 = __nccwpck_require__(798);
 const os = __importStar(__nccwpck_require__(2037));
 const path = __importStar(__nccwpck_require__(1017));
-const oidc_utils_1 = __nccwpck_require__(7557);
+const oidc_utils_1 = __nccwpck_require__(5912);
 /**
  * The code to exit an action
  */
@@ -837,17 +842,17 @@ exports.getIDToken = getIDToken;
 /**
  * Summary exports
  */
-var summary_1 = __nccwpck_require__(9029);
+var summary_1 = __nccwpck_require__(1499);
 Object.defineProperty(exports, "summary", ({ enumerable: true, get: function () { return summary_1.summary; } }));
 /**
  * @deprecated use core.summary
  */
-var summary_2 = __nccwpck_require__(9029);
+var summary_2 = __nccwpck_require__(1499);
 Object.defineProperty(exports, "markdownSummary", ({ enumerable: true, get: function () { return summary_2.markdownSummary; } }));
 /**
  * Path exports
  */
-var path_utils_1 = __nccwpck_require__(8064);
+var path_utils_1 = __nccwpck_require__(8942);
 Object.defineProperty(exports, "toPosixPath", ({ enumerable: true, get: function () { return path_utils_1.toPosixPath; } }));
 Object.defineProperty(exports, "toWin32Path", ({ enumerable: true, get: function () { return path_utils_1.toWin32Path; } }));
 Object.defineProperty(exports, "toPlatformPath", ({ enumerable: true, get: function () { return path_utils_1.toPlatformPath; } }));
@@ -855,7 +860,7 @@ Object.defineProperty(exports, "toPlatformPath", ({ enumerable: true, get: funct
 
 /***/ }),
 
-/***/ 8466:
+/***/ 6526:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -886,8 +891,8 @@ exports.prepareKeyValueMessage = exports.issueFileCommand = void 0;
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const fs = __importStar(__nccwpck_require__(7147));
 const os = __importStar(__nccwpck_require__(2037));
-const uuid_1 = __nccwpck_require__(2574);
-const utils_1 = __nccwpck_require__(7369);
+const uuid_1 = __nccwpck_require__(6248);
+const utils_1 = __nccwpck_require__(798);
 function issueFileCommand(command, message) {
     const filePath = process.env[`GITHUB_${command}`];
     if (!filePath) {
@@ -920,7 +925,7 @@ exports.prepareKeyValueMessage = prepareKeyValueMessage;
 
 /***/ }),
 
-/***/ 7557:
+/***/ 5912:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -936,9 +941,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.OidcClient = void 0;
-const http_client_1 = __nccwpck_require__(2745);
-const auth_1 = __nccwpck_require__(2834);
-const core_1 = __nccwpck_require__(6024);
+const http_client_1 = __nccwpck_require__(8082);
+const auth_1 = __nccwpck_require__(8432);
+const core_1 = __nccwpck_require__(8864);
 class OidcClient {
     static createHttpClient(allowRetry = true, maxRetry = 10) {
         const requestOptions = {
@@ -1004,7 +1009,7 @@ exports.OidcClient = OidcClient;
 
 /***/ }),
 
-/***/ 8064:
+/***/ 8942:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -1069,7 +1074,7 @@ exports.toPlatformPath = toPlatformPath;
 
 /***/ }),
 
-/***/ 9029:
+/***/ 1499:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -1359,7 +1364,7 @@ exports.summary = _summary;
 
 /***/ }),
 
-/***/ 7369:
+/***/ 798:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -1406,7 +1411,7 @@ exports.toCommandProperties = toCommandProperties;
 
 /***/ }),
 
-/***/ 2423:
+/***/ 8752:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -1442,7 +1447,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getExecOutput = exports.exec = void 0;
 const string_decoder_1 = __nccwpck_require__(1576);
-const tr = __importStar(__nccwpck_require__(9216));
+const tr = __importStar(__nccwpck_require__(5146));
 /**
  * Exec a command.
  * Output will be streamed to the live console.
@@ -1516,7 +1521,7 @@ exports.getExecOutput = getExecOutput;
 
 /***/ }),
 
-/***/ 9216:
+/***/ 5146:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -1555,8 +1560,8 @@ const os = __importStar(__nccwpck_require__(2037));
 const events = __importStar(__nccwpck_require__(2361));
 const child = __importStar(__nccwpck_require__(2081));
 const path = __importStar(__nccwpck_require__(1017));
-const io = __importStar(__nccwpck_require__(6202));
-const ioUtil = __importStar(__nccwpck_require__(6120));
+const io = __importStar(__nccwpck_require__(5545));
+const ioUtil = __importStar(__nccwpck_require__(7511));
 const timers_1 = __nccwpck_require__(9512);
 /* eslint-disable @typescript-eslint/unbound-method */
 const IS_WINDOWS = process.platform === 'win32';
@@ -2141,7 +2146,7 @@ class ExecState extends events.EventEmitter {
 
 /***/ }),
 
-/***/ 2834:
+/***/ 8432:
 /***/ (function(__unused_webpack_module, exports) {
 
 "use strict";
@@ -2229,7 +2234,7 @@ exports.PersonalAccessTokenCredentialHandler = PersonalAccessTokenCredentialHand
 
 /***/ }),
 
-/***/ 2745:
+/***/ 8082:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -2267,8 +2272,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.HttpClient = exports.isHttps = exports.HttpClientResponse = exports.HttpClientError = exports.getProxyUrl = exports.MediaTypes = exports.Headers = exports.HttpCodes = void 0;
 const http = __importStar(__nccwpck_require__(3685));
 const https = __importStar(__nccwpck_require__(5687));
-const pm = __importStar(__nccwpck_require__(7307));
-const tunnel = __importStar(__nccwpck_require__(9958));
+const pm = __importStar(__nccwpck_require__(5307));
+const tunnel = __importStar(__nccwpck_require__(3357));
 var HttpCodes;
 (function (HttpCodes) {
     HttpCodes[HttpCodes["OK"] = 200] = "OK";
@@ -2854,7 +2859,7 @@ const lowercaseKeys = (obj) => Object.keys(obj).reduce((c, k) => ((c[k.toLowerCa
 
 /***/ }),
 
-/***/ 7307:
+/***/ 5307:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -2943,7 +2948,7 @@ function isLoopbackAddress(host) {
 
 /***/ }),
 
-/***/ 6120:
+/***/ 7511:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -3133,7 +3138,7 @@ exports.getCmdPath = getCmdPath;
 
 /***/ }),
 
-/***/ 6202:
+/***/ 5545:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -3170,7 +3175,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.findInPath = exports.which = exports.mkdirP = exports.rmRF = exports.mv = exports.cp = void 0;
 const assert_1 = __nccwpck_require__(9491);
 const path = __importStar(__nccwpck_require__(1017));
-const ioUtil = __importStar(__nccwpck_require__(6120));
+const ioUtil = __importStar(__nccwpck_require__(7511));
 /**
  * Copies a file or folder.
  * Based off of shelljs - https://github.com/shelljs/shelljs/blob/9237f66c52e5daa40458f94f9565e18e8132f5a6/src/cp.js
@@ -3439,7 +3444,7 @@ function copyFile(srcFile, destFile, force) {
 
 /***/ }),
 
-/***/ 378:
+/***/ 3020:
 /***/ (function(module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -3474,8 +3479,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports._readLinuxVersionFile = exports._getOsVersion = exports._findMatch = void 0;
-const semver = __importStar(__nccwpck_require__(1554));
-const core_1 = __nccwpck_require__(6024);
+const semver = __importStar(__nccwpck_require__(7198));
+const core_1 = __nccwpck_require__(8864);
 // needs to be require for core node modules to be mocked
 /* eslint @typescript-eslint/no-require-imports: 0 */
 const os = __nccwpck_require__(2037);
@@ -3574,7 +3579,7 @@ exports._readLinuxVersionFile = _readLinuxVersionFile;
 
 /***/ }),
 
-/***/ 3704:
+/***/ 6209:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -3609,7 +3614,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.RetryHelper = void 0;
-const core = __importStar(__nccwpck_require__(6024));
+const core = __importStar(__nccwpck_require__(8864));
 /**
  * Internal class for retries
  */
@@ -3664,7 +3669,7 @@ exports.RetryHelper = RetryHelper;
 
 /***/ }),
 
-/***/ 3594:
+/***/ 9898:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -3702,20 +3707,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.evaluateVersions = exports.isExplicitVersion = exports.findFromManifest = exports.getManifestFromRepo = exports.findAllVersions = exports.find = exports.cacheFile = exports.cacheDir = exports.extractZip = exports.extractXar = exports.extractTar = exports.extract7z = exports.downloadTool = exports.HTTPError = void 0;
-const core = __importStar(__nccwpck_require__(6024));
-const io = __importStar(__nccwpck_require__(6202));
+const core = __importStar(__nccwpck_require__(8864));
+const io = __importStar(__nccwpck_require__(5545));
 const fs = __importStar(__nccwpck_require__(7147));
-const mm = __importStar(__nccwpck_require__(378));
+const mm = __importStar(__nccwpck_require__(3020));
 const os = __importStar(__nccwpck_require__(2037));
 const path = __importStar(__nccwpck_require__(1017));
-const httpm = __importStar(__nccwpck_require__(2745));
-const semver = __importStar(__nccwpck_require__(1554));
+const httpm = __importStar(__nccwpck_require__(8082));
+const semver = __importStar(__nccwpck_require__(7198));
 const stream = __importStar(__nccwpck_require__(2781));
 const util = __importStar(__nccwpck_require__(3837));
 const assert_1 = __nccwpck_require__(9491);
-const v4_1 = __importDefault(__nccwpck_require__(3433));
-const exec_1 = __nccwpck_require__(2423);
-const retry_helper_1 = __nccwpck_require__(3704);
+const v4_1 = __importDefault(__nccwpck_require__(8380));
+const exec_1 = __nccwpck_require__(8752);
+const retry_helper_1 = __nccwpck_require__(6209);
 class HTTPError extends Error {
     constructor(httpStatusCode) {
         super(`Unexpected HTTP response: ${httpStatusCode}`);
@@ -4336,7 +4341,7 @@ function _unique(values) {
 
 /***/ }),
 
-/***/ 5033:
+/***/ 4243:
 /***/ ((module) => {
 
 /**
@@ -4369,7 +4374,7 @@ module.exports = bytesToUuid;
 
 /***/ }),
 
-/***/ 7991:
+/***/ 614:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 // Unique ID creation requires a high quality random # generator.  In node.js
@@ -4384,11 +4389,11 @@ module.exports = function nodeRNG() {
 
 /***/ }),
 
-/***/ 3433:
+/***/ 8380:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-var rng = __nccwpck_require__(7991);
-var bytesToUuid = __nccwpck_require__(5033);
+var rng = __nccwpck_require__(614);
+var bytesToUuid = __nccwpck_require__(4243);
 
 function v4(options, buf, offset) {
   var i = buf && offset || 0;
@@ -4420,7 +4425,7 @@ module.exports = v4;
 
 /***/ }),
 
-/***/ 1554:
+/***/ 7198:
 /***/ ((module, exports) => {
 
 exports = module.exports = SemVer
@@ -6070,15 +6075,15 @@ function coerce (version, options) {
 
 /***/ }),
 
-/***/ 9958:
+/***/ 3357:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-module.exports = __nccwpck_require__(9306);
+module.exports = __nccwpck_require__(2096);
 
 
 /***/ }),
 
-/***/ 9306:
+/***/ 2096:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -6350,7 +6355,7 @@ exports.debug = debug; // for test
 
 /***/ }),
 
-/***/ 2574:
+/***/ 6248:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -6414,29 +6419,29 @@ Object.defineProperty(exports, "parse", ({
   }
 }));
 
-var _v = _interopRequireDefault(__nccwpck_require__(1519));
+var _v = _interopRequireDefault(__nccwpck_require__(2890));
 
-var _v2 = _interopRequireDefault(__nccwpck_require__(852));
+var _v2 = _interopRequireDefault(__nccwpck_require__(8267));
 
-var _v3 = _interopRequireDefault(__nccwpck_require__(3586));
+var _v3 = _interopRequireDefault(__nccwpck_require__(9445));
 
-var _v4 = _interopRequireDefault(__nccwpck_require__(3894));
+var _v4 = _interopRequireDefault(__nccwpck_require__(6456));
 
-var _nil = _interopRequireDefault(__nccwpck_require__(463));
+var _nil = _interopRequireDefault(__nccwpck_require__(8578));
 
-var _version = _interopRequireDefault(__nccwpck_require__(3345));
+var _version = _interopRequireDefault(__nccwpck_require__(4947));
 
-var _validate = _interopRequireDefault(__nccwpck_require__(9436));
+var _validate = _interopRequireDefault(__nccwpck_require__(957));
 
-var _stringify = _interopRequireDefault(__nccwpck_require__(6467));
+var _stringify = _interopRequireDefault(__nccwpck_require__(4381));
 
-var _parse = _interopRequireDefault(__nccwpck_require__(6501));
+var _parse = _interopRequireDefault(__nccwpck_require__(5095));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 /***/ }),
 
-/***/ 1626:
+/***/ 1068:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -6466,7 +6471,7 @@ exports["default"] = _default;
 
 /***/ }),
 
-/***/ 463:
+/***/ 8578:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -6481,7 +6486,7 @@ exports["default"] = _default;
 
 /***/ }),
 
-/***/ 6501:
+/***/ 5095:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -6492,7 +6497,7 @@ Object.defineProperty(exports, "__esModule", ({
 }));
 exports["default"] = void 0;
 
-var _validate = _interopRequireDefault(__nccwpck_require__(9436));
+var _validate = _interopRequireDefault(__nccwpck_require__(957));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -6533,7 +6538,7 @@ exports["default"] = _default;
 
 /***/ }),
 
-/***/ 7467:
+/***/ 8339:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -6548,7 +6553,7 @@ exports["default"] = _default;
 
 /***/ }),
 
-/***/ 551:
+/***/ 5779:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -6579,7 +6584,7 @@ function rng() {
 
 /***/ }),
 
-/***/ 4894:
+/***/ 2453:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -6609,7 +6614,7 @@ exports["default"] = _default;
 
 /***/ }),
 
-/***/ 6467:
+/***/ 4381:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -6620,7 +6625,7 @@ Object.defineProperty(exports, "__esModule", ({
 }));
 exports["default"] = void 0;
 
-var _validate = _interopRequireDefault(__nccwpck_require__(9436));
+var _validate = _interopRequireDefault(__nccwpck_require__(957));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -6655,7 +6660,7 @@ exports["default"] = _default;
 
 /***/ }),
 
-/***/ 1519:
+/***/ 2890:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -6666,9 +6671,9 @@ Object.defineProperty(exports, "__esModule", ({
 }));
 exports["default"] = void 0;
 
-var _rng = _interopRequireDefault(__nccwpck_require__(551));
+var _rng = _interopRequireDefault(__nccwpck_require__(5779));
 
-var _stringify = _interopRequireDefault(__nccwpck_require__(6467));
+var _stringify = _interopRequireDefault(__nccwpck_require__(4381));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -6769,7 +6774,7 @@ exports["default"] = _default;
 
 /***/ }),
 
-/***/ 852:
+/***/ 8267:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -6780,9 +6785,9 @@ Object.defineProperty(exports, "__esModule", ({
 }));
 exports["default"] = void 0;
 
-var _v = _interopRequireDefault(__nccwpck_require__(2323));
+var _v = _interopRequireDefault(__nccwpck_require__(678));
 
-var _md = _interopRequireDefault(__nccwpck_require__(1626));
+var _md = _interopRequireDefault(__nccwpck_require__(1068));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -6792,7 +6797,7 @@ exports["default"] = _default;
 
 /***/ }),
 
-/***/ 2323:
+/***/ 678:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -6804,9 +6809,9 @@ Object.defineProperty(exports, "__esModule", ({
 exports["default"] = _default;
 exports.URL = exports.DNS = void 0;
 
-var _stringify = _interopRequireDefault(__nccwpck_require__(6467));
+var _stringify = _interopRequireDefault(__nccwpck_require__(4381));
 
-var _parse = _interopRequireDefault(__nccwpck_require__(6501));
+var _parse = _interopRequireDefault(__nccwpck_require__(5095));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -6877,7 +6882,7 @@ function _default(name, version, hashfunc) {
 
 /***/ }),
 
-/***/ 3586:
+/***/ 9445:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -6888,9 +6893,9 @@ Object.defineProperty(exports, "__esModule", ({
 }));
 exports["default"] = void 0;
 
-var _rng = _interopRequireDefault(__nccwpck_require__(551));
+var _rng = _interopRequireDefault(__nccwpck_require__(5779));
 
-var _stringify = _interopRequireDefault(__nccwpck_require__(6467));
+var _stringify = _interopRequireDefault(__nccwpck_require__(4381));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -6921,7 +6926,7 @@ exports["default"] = _default;
 
 /***/ }),
 
-/***/ 3894:
+/***/ 6456:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -6932,9 +6937,9 @@ Object.defineProperty(exports, "__esModule", ({
 }));
 exports["default"] = void 0;
 
-var _v = _interopRequireDefault(__nccwpck_require__(2323));
+var _v = _interopRequireDefault(__nccwpck_require__(678));
 
-var _sha = _interopRequireDefault(__nccwpck_require__(4894));
+var _sha = _interopRequireDefault(__nccwpck_require__(2453));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -6944,7 +6949,7 @@ exports["default"] = _default;
 
 /***/ }),
 
-/***/ 9436:
+/***/ 957:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -6955,7 +6960,7 @@ Object.defineProperty(exports, "__esModule", ({
 }));
 exports["default"] = void 0;
 
-var _regex = _interopRequireDefault(__nccwpck_require__(7467));
+var _regex = _interopRequireDefault(__nccwpck_require__(8339));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -6968,7 +6973,7 @@ exports["default"] = _default;
 
 /***/ }),
 
-/***/ 3345:
+/***/ 4947:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -6979,7 +6984,7 @@ Object.defineProperty(exports, "__esModule", ({
 }));
 exports["default"] = void 0;
 
-var _validate = _interopRequireDefault(__nccwpck_require__(9436));
+var _validate = _interopRequireDefault(__nccwpck_require__(957));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -7159,12 +7164,27 @@ var __webpack_exports__ = {};
 (() => {
 const os = __nccwpck_require__(2037);
 const fs = __nccwpck_require__(7147);
-const action = __nccwpck_require__(1834);
-const core = __nccwpck_require__(6024);
+const action = __nccwpck_require__(2425);
+const core = __nccwpck_require__(8864);
 
-/*
-This function we determine the applicable distribution of the Linux operating system and sets the default distribution for other operating systems like Windows and MacOS.
-*/
+// Variable from Github to asign.
+const tempDir = process.env['RUNNER_TEMP'];
+
+// The name of the tool we are installing with this action, which is 'Venafi Code Sign Protect'
+const toolName = "Venafi_CSP";
+
+// The architecture of the system to install the package on. Most scenarios 'intel' is applicable.
+const architecture = core.getInput('architecture');
+
+// Base form of the the URL to download the release archives. As long as this
+// does not change this will be able to download any version the CLI. Additional we request both Auth and HSML URL.
+const baseURL = core.getInput('venafi-csc-url') + '/clients';
+
+const authURL = core.getInput('venafi-auth-url');
+
+const hsmURL = core.getInput('venafi-hsm-url');
+
+// This function we determine the applicable distribution of the Linux operating system and sets the default distribution for other operating systems like Windows and MacOS.
 function getLinuxDistro(currentOs) {
   let currentDistro = "";
   let currentFamily = "";
@@ -7206,7 +7226,7 @@ This is how the action is used:
 async function run() {
   try {
     // Get the users input of the with
-    const version = core.getInput("tpp-version");
+    const version = core.getInput("venafi-version");
     core.info(`Installing CSP Driver version ${version}...`);
 
     // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
@@ -7219,7 +7239,7 @@ async function run() {
      const { currentDistro, currentFamily } = getLinuxDistro(currentOs);
 
     // run the action code
-    await action.run(currentOs, currentDistro, currentFamily, version);
+    await action.run(tempDir, toolName, version, baseURL, authURL, hsmURL, currentOs, currentDistro, currentFamily, architecture);
 
     core.info(new Date().toTimeString());
   } catch (error) {
